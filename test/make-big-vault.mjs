@@ -58,7 +58,7 @@ for (let i = 0; i < count; i++) {
 		`format: ${format}`,
 		`size: ${size}`,
 		...(cover ? [`cover: "[[${cover}]]"`] : []),
-		"ingested: 2026-08-11",
+		'ingested: "2026-08-01T09:00:00"',
 		`title: "${title}"`,
 		`author: "${author}"`,
 		`year: ${1950 + (i % 75)}`,

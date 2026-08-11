@@ -63,17 +63,16 @@ export function appendRun(runs: RunRecord[], record: RunRecord): RunRecord[] {
 }
 
 /**
- * Gehört diese Notiz zu diesem Lauf?
+ * Gehört diese Notiz zu diesem Lauf? Nur bei genauer Übereinstimmung.
  *
- * Ältere Notizen tragen nur ein Datum statt eines Zeitstempels — die zählen zu
- * jedem Lauf dieses Tages.
+ * Notizen aus der Zeit vor den Zeitstempeln tragen nur ein Datum. Die auf den
+ * Tag genau zuzuordnen wäre falsch: sie gehörten dann zu *jedem* Lauf dieses
+ * Tages — ein Zugang von zwei Büchern zeigte plötzlich fünftausend. Zu welchem
+ * Lauf sie kamen, ist schlicht nicht überliefert; sie gehören zu keinem.
  */
 export function belongsToRun(ingested: unknown, run: RunRecord): boolean {
 	const value = String(ingested ?? "").trim();
-	if (!value) return false;
-	if (value === run.id) return true;
-	if (!value.includes("T")) return run.id.startsWith(value);
-	return false;
+	return value !== "" && value === run.id;
 }
 
 /** `11.08.2026, 15:42` */

@@ -34,9 +34,10 @@ const run: RunRecord = {
 
 check("Notiz desselben Laufs gehört dazu", belongsToRun(id, run));
 check("Notiz eines anderen Laufs nicht", !belongsToRun("2026-08-11T09:00:00", run));
-// Notizen aus der Zeit vor den Zeitstempeln tragen nur ein Datum.
-check("altes Datum zählt zum Lauf desselben Tages", belongsToRun("2026-08-11", run));
-check("altes Datum eines anderen Tages nicht", !belongsToRun("2026-08-10", run));
+// Der Fehler, der 5000 Altbestand-Notizen in einen Zugang von zwei Büchern
+// gespült hat: reines Datum darf nicht auf den Tag genau zugeordnet werden.
+check("reines Datum zählt zu keinem Lauf", !belongsToRun("2026-08-11", run));
+check("erst recht nicht das eines anderen Tages", !belongsToRun("2026-08-10", run));
 check("Leerwerte gehören nirgends dazu", !belongsToRun("", run) && !belongsToRun(undefined, run));
 
 // Nur Fehlschläge werden im Einzelnen festgehalten, und nur begrenzt viele.
