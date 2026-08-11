@@ -1,0 +1,285 @@
+.ebook-library {
+  --ebook-cover-width: 100px;
+  --ebook-font-size: 12px;
+  --ebook-line-height: 16px;
+  --ebook-meta-height: 74px;
+  --ebook-pdf: #d2453f;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Werkzeugleiste */
+
+.ebook-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  flex: none;
+}
+
+.ebook-search {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.ebook-formats {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.ebook-toggle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  color: var(--text-muted);
+  background: var(--background-modifier-form-field);
+  box-shadow: none;
+}
+
+.ebook-toggle.is-on {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.ebook-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.ebook-zoom input[type="range"] {
+  width: 92px;
+}
+
+.ebook-zoom-icon {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ebook-scan {
+  flex: none;
+}
+
+/* Tag-Chips */
+
+.ebook-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 14px 8px;
+  flex: none;
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.ebook-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 18px;
+  padding: 1px 9px;
+  border-radius: 10px;
+  color: var(--text-muted);
+  background: var(--background-modifier-form-field);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.ebook-chip:hover {
+  color: var(--text-normal);
+}
+
+.ebook-chip.is-on {
+  color: var(--text-on-accent);
+  background: var(--interactive-accent);
+}
+
+.ebook-chip-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+.ebook-count {
+  padding: 0 14px 8px;
+  font-size: 11px;
+  color: var(--text-faint);
+  flex: none;
+}
+
+.ebook-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Virtualisiertes Regalbrett */
+
+.ebook-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 14px 24px;
+}
+
+.ebook-sizer {
+  position: relative;
+  width: 100%;
+}
+
+.ebook-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ebook-cover-width), 1fr));
+  align-items: start;
+}
+
+.ebook-cell {
+  font-size: var(--ebook-font-size);
+  line-height: var(--ebook-line-height);
+  cursor: pointer;
+}
+
+.ebook-cell.is-orphaned {
+  opacity: 0.45;
+}
+
+.ebook-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
+}
+
+.ebook-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ebook-cell:hover .ebook-cover {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+.ebook-nocover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--text-faint);
+  overflow: hidden;
+}
+
+/* PDF-Marke unten rechts */
+
+.ebook-pdf {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 22px;
+  height: 25px;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.45));
+}
+
+.ebook-pdf-sheet {
+  fill: #fff;
+  stroke: var(--ebook-pdf);
+  stroke-width: 1.6;
+}
+
+.ebook-pdf-fold {
+  fill: none;
+  stroke: var(--ebook-pdf);
+  stroke-width: 1.6;
+}
+
+.ebook-pdf-tab {
+  fill: var(--ebook-pdf);
+}
+
+.ebook-pdf-text {
+  fill: #fff;
+  font-size: 7.5px;
+  font-weight: 700;
+  font-family: var(--font-interface);
+  letter-spacing: 0.02em;
+}
+
+/* Beschriftung — feste Höhe, sonst bricht die Virtualisierung */
+
+.ebook-title,
+.ebook-author,
+.ebook-foot {
+  overflow: hidden;
+}
+
+.ebook-title {
+  font-weight: 500;
+  color: var(--text-normal);
+  height: calc(2 * var(--ebook-line-height));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ebook-author {
+  color: var(--text-muted);
+  height: var(--ebook-line-height);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ebook-foot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--ebook-line-height);
+  white-space: nowrap;
+}
+
+.ebook-size {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  flex: none;
+}
+
+.ebook-minitag {
+  font-size: 10px;
+  line-height: 15px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: var(--text-faint);
+  background: var(--background-modifier-form-field);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ebook-empty {
+  grid-column: 1 / -1;
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 13px;
+}

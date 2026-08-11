@@ -2,7 +2,6 @@
 export const CATALOG_FOLDER = "_catalog";
 export const COVERS_FOLDER = `${CATALOG_FOLDER}/covers`;
 export const REPORT_PATH = `${CATALOG_FOLDER}/_ingest-report.md`;
-export const BASE_PATH = `${CATALOG_FOLDER}/Bibliothek.base`;
 
 export const BOOK_EXTENSIONS = ["epub", "pdf"] as const;
 export type BookFormat = (typeof BOOK_EXTENSIONS)[number];

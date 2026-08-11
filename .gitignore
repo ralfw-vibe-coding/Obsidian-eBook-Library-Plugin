@@ -6,4 +6,5 @@ main.js.map
 # Generierte Prüfstände
 test/.harness.mjs
 test/.scan.test.mjs
+test/.virtual.test.mjs
 test/browser/bundle.js

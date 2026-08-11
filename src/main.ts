@@ -1,16 +1,41 @@
 import { Notice, Plugin, TFile } from "obsidian";
-import { ensureBaseFile } from "./base";
 import { FIELD, frontmatterOf } from "./note";
 import { writeReport } from "./report";
 import { reingestAll, reingestNote, scanLibrary } from "./scan";
 import type { ScanResult } from "./types";
+import { LibraryView, VIEW_TYPE_LIBRARY, type LibraryHost } from "./view";
 
 type ScanMode = "scan" | "rehash" | "reingest";
 
-export default class EbookLibraryPlugin extends Plugin {
+interface Settings {
+	/** Cover-Breite im Katalog-View, in Pixeln. */
+	zoom: number;
+}
+
+const DEFAULTS: Settings = { zoom: 100 };
+
+export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 	private scanning = false;
+	private config: Settings = { ...DEFAULTS };
+
+	get zoom(): number {
+		return this.config.zoom;
+	}
 
 	async onload(): Promise<void> {
+		this.config = { ...DEFAULTS, ...((await this.loadData()) ?? {}) };
+
+		this.registerView(VIEW_TYPE_LIBRARY, (leaf) => new LibraryView(leaf, this));
+
+		// Nur der View bekommt ein Ribbon-Icon; alles Weitere steuert man von dort.
+		this.addRibbonIcon("library-big", "eBook Library", () => void this.openLibrary());
+
+		this.addCommand({
+			id: "open-library",
+			name: "Bibliothek öffnen",
+			callback: () => void this.openLibrary(),
+		});
+
 		this.addCommand({
 			id: "scan",
 			name: "Bibliothek scannen, neue Bücher in den Katalog aufnehmen",
@@ -44,18 +69,32 @@ export default class EbookLibraryPlugin extends Plugin {
 				void this.reingest(note);
 			},
 		});
+	}
 
-		this.addRibbonIcon("library-big", "Bibliothek scannen", () => void this.scan({ mode: "scan" }));
+	saveZoom(zoom: number): void {
+		this.config.zoom = zoom;
+		void this.saveData(this.config);
+	}
 
-		this.app.workspace.onLayoutReady(() => void ensureBaseFile(this.app));
+	async runScan(): Promise<void> {
+		await this.scan({ mode: "scan" });
+	}
+
+	private async openLibrary(): Promise<void> {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIBRARY);
+		if (existing.length > 0) {
+			await this.app.workspace.revealLeaf(existing[0]);
+			return;
+		}
+
+		const leaf = this.app.workspace.getLeaf(true);
+		await leaf.setViewState({ type: VIEW_TYPE_LIBRARY, active: true });
 	}
 
 	private activeCatalogNote(): TFile | null {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") return null;
-
-		const frontmatter = frontmatterOf(this.app, file);
-		if (typeof frontmatter?.[FIELD.hash] !== "string") return null;
+		if (typeof frontmatterOf(this.app, file)?.[FIELD.hash] !== "string") return null;
 
 		return file;
 	}
@@ -67,7 +106,8 @@ export default class EbookLibraryPlugin extends Plugin {
 		}
 
 		this.scanning = true;
-		const heading = options.mode === "reingest" ? "Metadaten werden neu eingelesen" : "Bibliothek wird gescannt";
+		const heading =
+			options.mode === "reingest" ? "Metadaten werden neu eingelesen" : "Bibliothek wird gescannt";
 		const notice = new Notice(`${heading} …`, 0);
 
 		try {
@@ -81,7 +121,6 @@ export default class EbookLibraryPlugin extends Plugin {
 					: await scanLibrary(this.app, { rehashAll: options.mode === "rehash", onProgress });
 
 			await writeReport(this.app, result);
-			await ensureBaseFile(this.app);
 
 			notice.hide();
 			new Notice(summarize(result, options.mode), 10000);

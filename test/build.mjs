@@ -14,6 +14,16 @@ await esbuild.build({
 });
 
 await esbuild.build({
+	entryPoints: ["test/virtual.test.ts"],
+	bundle: true,
+	platform: "node",
+	format: "esm",
+	packages: "external",
+	outfile: "test/.virtual.test.mjs",
+	logLevel: "warning",
+});
+
+await esbuild.build({
 	entryPoints: ["test/scan.test.ts"],
 	bundle: true,
 	platform: "node",
