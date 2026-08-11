@@ -329,6 +329,7 @@
 }
 
 .ebook-cell {
+  position: relative;
   font-size: var(--ebook-font-size);
   line-height: var(--ebook-line-height);
   cursor: pointer;
@@ -531,11 +532,24 @@
   opacity: 0.35;
 }
 
-/* Einfügemarke beim Ziehen */
-.ebook-cell.is-drop-before .ebook-cover {
-  box-shadow: -3px 0 0 0 var(--interactive-accent);
+/* Einfügemarke beim Ziehen: in den Zwischenraum zwischen die Bücher, nicht auf
+   das Cover — dort verschwand sie zwischen Buchdeckel und Rahmen. Das Cover
+   selbst schneidet ab (overflow), die Marke haengt deshalb an der Zelle. */
+.ebook-cell.is-drop-before::before,
+.ebook-cell.is-drop-after::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-red, #e93147);
 }
 
-.ebook-cell.is-drop-after .ebook-cover {
-  box-shadow: 3px 0 0 0 var(--interactive-accent);
+.ebook-cell.is-drop-before::before {
+  left: -10px;
+}
+
+.ebook-cell.is-drop-after::after {
+  right: -10px;
 }

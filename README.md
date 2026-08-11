@@ -50,11 +50,16 @@ Vault. Aufgehoben werden die letzten 30 Läufe.
 Rechtsklick auf ein Buch → „Zu Leseliste hinzufügen …". Der Dialog zeigt die
 vorhandenen Listen; tippt man einen neuen Namen, entsteht die Liste.
 
-Das Listensymbol in der Leiste öffnet das Menü aller Listen. Eine ausgewählt
-schaltet den Katalog in den Listenmodus: nur ihre Bücher, in Listenreihenfolge,
-mit Positionsnummer auf dem Cover. Umsortiert wird durch Ziehen und Ablegen; im
+Das Listensymbol in der Leiste öffnet das Menü aller Listen mit ihrer Anzahl.
+Eine ausgewählt schaltet den Katalog in den Listenmodus: nur ihre Bücher, in
+Listenreihenfolge, mit Positionsnummer auf dem Cover. Umsortiert wird durch
+Ziehen und Ablegen — die rote Marke im Zwischenraum zeigt, wo eingefügt wird. Im
 Kontextmenü stehen zusätzlich „An den Anfang" und „Ans Ende", dort wird auch
 entfernt.
+
+Löschen lässt sich eine Liste im Listenmenü, aber nur solange sie aufgeschlagen
+ist — sonst wäre unklar, welche gemeint ist. Es kommt eine Rückfrage, die Datei
+wandert in den Papierkorb, die Bücher bleiben unberührt.
 
 Je Liste eine Markdown-Datei unter `_catalog/readinglists/`, der Dateiname ist
 der Titel:

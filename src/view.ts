@@ -9,6 +9,7 @@ import {
 	setIcon,
 	setTooltip,
 } from "obsidian";
+import { ConfirmModal } from "./confirm";
 import { belongsToRun, formatRunTime, type RunRecord } from "./history";
 import { ListPicker } from "./list-picker";
 import {
@@ -238,29 +239,48 @@ export class LibraryView extends ItemView {
 			for (const list of lists) {
 				menu.addItem((item) =>
 					item
-						.setTitle(`${list.name} · ${list.books.length}`)
+						.setTitle(`${list.name} (${list.books.length})`)
 						.setChecked(this.activeList?.file.path === list.file.path)
 						.onClick(() => void this.setActiveList(list)),
 				);
 			}
 		}
 
-		menu.addSeparator();
-		menu.addItem((item) =>
-			item
-				.setTitle("Neue Liste …")
-				.setIcon("plus")
-				.onClick(() => {
-					new ListPicker(this.app, "Neue Leseliste", (file, newName) => {
-						if (!newName) return;
-						void createList(this.app, newName).then((created) =>
-							this.setActiveList(readList(this.app, created)),
-						);
-					}).open();
-				}),
-		);
+		// Löschen nur, wenn eine Liste aufgeschlagen ist — sonst wäre unklar,
+		// welche gemeint ist. Neue Listen entstehen beim Hinzufügen eines Buchs,
+		// dafür braucht es hier keinen Eintrag.
+		const open = this.activeList;
+		if (open) {
+			menu.addSeparator();
+			menu.addItem((item) =>
+				item
+					.setTitle(`„${open.name}“ löschen …`)
+					.setIcon("trash-2")
+					.onClick(() => this.confirmDeleteList(open)),
+			);
+		}
 
 		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Eine Liste wegzuwerfen ist der einzige Griff im Plugin, der etwas
+	 * vernichtet — deshalb mit Rückfrage. Die Datei geht in den Papierkorb,
+	 * die Bücher bleiben selbstverständlich unberührt.
+	 */
+	private confirmDeleteList(list: ReadingList): void {
+		new ConfirmModal(
+			this.app,
+			`„${list.name}“ löschen?`,
+			`Die Leseliste mit ${list.books.length} ${list.books.length === 1 ? "Buch" : "Büchern"} wandert in den Papierkorb. Die Bücher selbst bleiben unberührt.`,
+			"Löschen",
+			() => {
+				void this.app.fileManager.trashFile(list.file).then(() => {
+					new Notice(`„${list.name}“ gelöscht.`);
+					void this.setActiveList(null);
+				});
+			},
+		).open();
 	}
 
 	private async setActiveList(list: ReadingList | Promise<ReadingList> | null): Promise<void> {
