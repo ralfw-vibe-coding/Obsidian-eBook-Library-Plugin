@@ -3,6 +3,8 @@
   --ebook-font-size: 12px;
   --ebook-line-height: 16px;
   --ebook-meta-height: 74px;
+  --ebook-mark-width: 24px;
+  --ebook-mark-height: 27px;
   --ebook-pdf: #d2453f;
 
   display: flex;
@@ -197,21 +199,22 @@
   position: absolute;
   right: 5px;
   bottom: 5px;
-  width: 22px;
-  height: 25px;
-  filter: drop-shadow(0 0 2px rgb(0 0 0 / 0.45));
+  width: var(--ebook-mark-width);
+  height: var(--ebook-mark-height);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.5));
 }
 
 .ebook-pdf-sheet {
   fill: #fff;
   stroke: var(--ebook-pdf);
-  stroke-width: 1.6;
+  stroke-width: 2.2;
+  stroke-linejoin: round;
 }
 
-.ebook-pdf-fold {
-  fill: none;
-  stroke: var(--ebook-pdf);
-  stroke-width: 1.6;
+.ebook-pdf-rule {
+  stroke: #9aa0a6;
+  stroke-width: 1.1;
+  stroke-linecap: round;
 }
 
 .ebook-pdf-tab {
@@ -220,10 +223,10 @@
 
 .ebook-pdf-text {
   fill: #fff;
-  font-size: 7.5px;
+  font-size: 7.4px;
   font-weight: 700;
   font-family: var(--font-interface);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 /* Beschriftung — feste Höhe, sonst bricht die Virtualisierung */

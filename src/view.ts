@@ -171,6 +171,12 @@ export class LibraryView extends ItemView {
 		this.contentEl.style.setProperty("--ebook-font-size", `${fontSize}px`);
 		this.contentEl.style.setProperty("--ebook-line-height", `${lineHeight}px`);
 
+		// Die PDF-Marke wächst gedämpft mit: bei kleinen Covern muss sie lesbar
+		// bleiben, bei großen soll sie nicht ins Bild drängen.
+		const mark = Math.round(Math.min(38, Math.max(20, width * 0.22)));
+		this.contentEl.style.setProperty("--ebook-mark-width", `${mark}px`);
+		this.contentEl.style.setProperty("--ebook-mark-height", `${Math.round(mark * 34 / 30)}px`);
+
 		// Feste Höhe je Zelle — sonst lässt sich nicht ausrechnen, welche Zeilen
 		// gerade sichtbar sind, und die Virtualisierung fällt in sich zusammen.
 		const meta = 4 * lineHeight + 10;
@@ -354,26 +360,34 @@ export class LibraryView extends ItemView {
 }
 
 /**
- * Eigenes PDF-Symbol, unten rechts auf dem Cover. Der helle Rand hält es auch
- * auf dunklen Covern lesbar.
+ * PDF-Symbol unten rechts auf dem Cover: weißes Blatt mit gekappter Ecke,
+ * grauen Textlinien und rotem Balken. Die weiße Fläche und der Schlagschatten
+ * halten es auch auf dunklen Covern lesbar.
  */
 function pdfMark(parent: HTMLElement): void {
 	const svg = parent.createSvg("svg", {
 		cls: "ebook-pdf",
-		attr: { viewBox: "0 0 26 30", "aria-label": "PDF" },
+		attr: { viewBox: "0 0 30 34", "aria-label": "PDF" },
 	});
+
 	svg.createSvg("path", {
 		attr: {
-			d: "M3.5 1.5h12l7 7v20a1.5 1.5 0 0 1-1.5 1.5h-17.5a1.5 1.5 0 0 1-1.5-1.5v-25.5a1.5 1.5 0 0 1 1.5-1.5z",
+			d: "M10.6 1.4h11.2l6.8 6.8v22a2.4 2.4 0 0 1-2.4 2.4h-15.6a2.4 2.4 0 0 1-2.4-2.4v-26.4a2.4 2.4 0 0 1 2.4-2.4z",
 			class: "ebook-pdf-sheet",
 		},
 	});
-	svg.createSvg("path", { attr: { d: "M15.5 1.5v7h7", class: "ebook-pdf-fold" } });
+
+	for (const y of [9.5, 12.6, 15.7, 18.8, 21.9]) {
+		svg.createSvg("line", {
+			attr: { x1: "11.8", y1: String(y), x2: "24.6", y2: String(y), class: "ebook-pdf-rule" },
+		});
+	}
+
 	svg.createSvg("rect", {
-		attr: { x: "0.5", y: "13.5", width: "19", height: "10", rx: "1.5", class: "ebook-pdf-tab" },
+		attr: { x: "2.2", y: "17.6", width: "17.6", height: "9.8", rx: "1.4", class: "ebook-pdf-tab" },
 	});
 	svg.createSvg("text", {
-		attr: { x: "10", y: "21", "text-anchor": "middle", class: "ebook-pdf-text" },
+		attr: { x: "11", y: "24.9", "text-anchor": "middle", class: "ebook-pdf-text" },
 	}).setText("PDF");
 }
 
