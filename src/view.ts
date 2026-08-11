@@ -56,6 +56,8 @@ interface Entry {
 }
 
 const GAP = 18;
+/** So viele Tag-Chips werden höchstens gezeigt; für den Rest ist die Suche da. */
+const TAG_CHIP_LIMIT = 40;
 
 export class LibraryView extends ItemView {
 	private entries: Entry[] = [];
@@ -72,6 +74,9 @@ export class LibraryView extends ItemView {
 	private dragFrom: number | null = null;
 
 	private tagsEl!: HTMLElement;
+	private chipsEl!: HTMLElement;
+	/** Sucheingabe über die Tags selbst — bei hunderten unverzichtbar. */
+	private tagQuery = "";
 	private countEl!: HTMLElement;
 	private scrollEl!: HTMLElement;
 	private sizerEl!: HTMLElement;
@@ -106,7 +111,7 @@ export class LibraryView extends ItemView {
 		this.contentEl.addClass("ebook-library");
 
 		this.buildToolbar();
-		this.tagsEl = this.contentEl.createDiv("ebook-tags");
+		this.buildTagBar();
 
 		this.scrollEl = this.contentEl.createDiv("ebook-scroll");
 		this.sizerEl = this.scrollEl.createDiv("ebook-sizer");
@@ -216,6 +221,35 @@ export class LibraryView extends ItemView {
 				this.reload();
 			});
 		});
+	}
+
+	/**
+	 * Die Tag-Leiste: eine Sucheingabe und die Chips.
+	 *
+	 * Die Eingabe wird genau einmal erzeugt. Würde sie beim Neuzeichnen der
+	 * Chips mitentstehen, verlöre sie beim Tippen den Fokus.
+	 */
+	private buildTagBar(): void {
+		this.tagsEl = this.contentEl.createDiv("ebook-tags");
+
+		const search = this.tagsEl.createEl("input", {
+			cls: "ebook-tag-search",
+			attr: { type: "search", placeholder: "Tags filtern …" },
+		});
+		this.registerDomEvent(
+			search,
+			"input",
+			debounce(
+				() => {
+					this.tagQuery = search.value.trim().toLowerCase();
+					this.renderTagChips();
+				},
+				120,
+				true,
+			),
+		);
+
+		this.chipsEl = this.tagsEl.createDiv("ebook-chips");
 	}
 
 	/**
@@ -527,20 +561,37 @@ export class LibraryView extends ItemView {
 		return file ? this.app.vault.getResourcePath(file) : null;
 	}
 
-	/** Alle Tags des Katalogs als Chips, häufigste zuerst, mit Trefferzahl. */
+	/**
+	 * Die Tags als Chips, häufigste zuerst.
+	 *
+	 * Bei hunderten Tags ist die Sucheingabe der eigentliche Zugang; die Liste
+	 * wird gedeckelt, damit die Leiste nicht die halbe Ansicht frisst. Gewählte
+	 * Tags stehen immer vorn und bleiben sichtbar, auch wenn die Suche sie
+	 * sonst wegfiltern würde — sonst verlöre man aus dem Blick, wonach gerade
+	 * eingegrenzt wird.
+	 */
 	private renderTagChips(): void {
 		const counts = new Map<string, number>();
 		for (const entry of this.entries) {
 			for (const tag of entry.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
 		}
 
-		const sorted = [...counts.entries()].sort(
-			(a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "de"),
-		);
+		const byCount = (a: [string, number], b: [string, number]) =>
+			b[1] - a[1] || a[0].localeCompare(b[0], "de");
 
-		this.tagsEl.empty();
-		for (const [tag, count] of sorted) {
-			const chip = this.tagsEl.createEl("button", { cls: "ebook-chip" });
+		const all = [...counts.entries()].sort(byCount);
+		const chosen = all.filter(([tag]) => this.selectedTags.has(tag));
+		const rest = all
+			.filter(([tag]) => !this.selectedTags.has(tag))
+			.filter(([tag]) => !this.tagQuery || tag.includes(this.tagQuery));
+
+		const room = Math.max(0, TAG_CHIP_LIMIT - chosen.length);
+		const shown = [...chosen, ...rest.slice(0, room)];
+		const hidden = rest.length - Math.min(rest.length, room);
+
+		this.chipsEl.empty();
+		for (const [tag, count] of shown) {
+			const chip = this.chipsEl.createEl("button", { cls: "ebook-chip" });
 			chip.createSpan({ text: tag });
 			chip.createSpan({ cls: "ebook-chip-count", text: String(count) });
 			chip.toggleClass("is-on", this.selectedTags.has(tag));
@@ -548,12 +599,21 @@ export class LibraryView extends ItemView {
 			this.registerDomEvent(chip, "click", () => {
 				if (this.selectedTags.has(tag)) this.selectedTags.delete(tag);
 				else this.selectedTags.add(tag);
-				chip.toggleClass("is-on", this.selectedTags.has(tag));
+				this.renderTagChips();
 				this.applyFilters();
 			});
 		}
 
-		if (sorted.length === 0) this.tagsEl.createSpan({ cls: "ebook-hint", text: "Noch keine Tags" });
+		if (all.length === 0) {
+			this.chipsEl.createSpan({ cls: "ebook-hint", text: "Noch keine Tags" });
+		} else if (hidden > 0) {
+			this.chipsEl.createSpan({
+				cls: "ebook-hint",
+				text: this.tagQuery ? `… ${hidden} weitere Treffer` : `… ${hidden} weitere, tippen zum Suchen`,
+			});
+		} else if (rest.length === 0 && this.tagQuery) {
+			this.chipsEl.createSpan({ cls: "ebook-hint", text: "Kein Tag passt." });
+		}
 	}
 
 	private applyFilters(): void {

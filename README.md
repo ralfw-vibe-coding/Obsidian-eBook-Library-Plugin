@@ -10,7 +10,9 @@ das EPUB-ZIP, `DOMParser` liest das OPF-XML, `pdf.js` rendert die erste PDF-Seit
 ## Was es tut
 
 Der Katalog wird über einen eigenen View bedient — Regalbrett mit Covern, Suche,
-Format- und Tag-Filtern, Zoom. Die Markdown-Notizen sind reine Datenhaltung; man
+Format- und Tag-Filtern, Zoom. Die Tag-Leiste hat eine eigene Sucheingabe: bei
+hunderten Tags sind höchstens vierzig Chips zu sehen, der Rest ist über die Suche
+erreichbar. Gewählte Tags stehen immer vorn und bleiben sichtbar. Die Markdown-Notizen sind reine Datenhaltung; man
 muss sie nicht öffnen.
 
 Ein Scan geht alle `.epub`- und `.pdf`-Dateien der Vault durch und legt zu jedem

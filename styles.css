@@ -149,11 +149,29 @@
 
 .ebook-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  align-items: flex-start;
+  gap: 8px;
   padding: 0 14px 8px;
   flex: none;
-  max-height: 88px;
+}
+
+.ebook-tag-search {
+  flex: none;
+  width: 130px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
+.ebook-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 5px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 68px;
   overflow-y: auto;
 }
 
