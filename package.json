@@ -1,0 +1,29 @@
+{
+  "name": "obsidian-ebook-library",
+  "version": "0.1.0",
+  "description": "Obsidian-Plugin zur Verwaltung einer eBook-Sammlung",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "node test/build.mjs && node test/.scan.test.mjs \"../Ebook Test Vault\"",
+    "harness": "node test/build.mjs && node test/.harness.mjs",
+    "harness:browser": "node test/build.mjs && echo 'Server auf http://127.0.0.1:8765 — test/browser/index.html im Browser öffnen' && cd .. && python3 -m http.server 8765 --bind 127.0.0.1"
+  },
+  "keywords": [],
+  "author": "Ralf Westphal",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@xmldom/xmldom": "^0.9.10",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.2",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "pdfjs-dist": "^4.10.38"
+  }
+}

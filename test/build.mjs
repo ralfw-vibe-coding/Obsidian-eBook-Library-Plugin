@@ -1,0 +1,37 @@
+import esbuild from "esbuild";
+import { pdfWorkerSource } from "../esbuild-pdf-worker.mjs";
+
+/** Baut beide Prüfstände: den für Node und den für den Browser. */
+await esbuild.build({
+	entryPoints: ["test/harness.ts"],
+	bundle: true,
+	platform: "node",
+	format: "esm",
+	packages: "external",
+	outfile: "test/.harness.mjs",
+	logLevel: "warning",
+	plugins: [pdfWorkerSource],
+});
+
+await esbuild.build({
+	entryPoints: ["test/scan.test.ts"],
+	bundle: true,
+	platform: "node",
+	format: "esm",
+	packages: "external",
+	outfile: "test/.scan.test.mjs",
+	logLevel: "warning",
+	// Der Scanner spricht die Obsidian-API an; hier tritt der Ersatz an ihre Stelle.
+	alias: { obsidian: "./test/obsidian-stub.ts" },
+	plugins: [pdfWorkerSource],
+});
+
+await esbuild.build({
+	entryPoints: ["test/browser.ts"],
+	bundle: true,
+	format: "esm",
+	target: "es2022",
+	outfile: "test/browser/bundle.js",
+	logLevel: "warning",
+	plugins: [pdfWorkerSource],
+});
