@@ -35,35 +35,32 @@
   flex: none;
 }
 
-.ebook-toggle {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 4px 9px;
-  color: var(--text-muted);
-  background: var(--background-modifier-form-field);
-  box-shadow: none;
-}
-
-.ebook-toggle.is-on {
-  color: var(--text-on-accent);
-  background: var(--interactive-accent);
-}
-
 .ebook-zoom {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex: none;
 }
 
 .ebook-zoom input[type="range"] {
-  width: 92px;
+  width: 84px;
 }
 
 .ebook-zoom-icon {
-  font-size: 13px;
+  display: flex;
   color: var(--text-muted);
+}
+
+.ebook-zoom-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ebook-zoom-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 3.4em;
 }
 
 .ebook-scan {
@@ -85,11 +82,12 @@
 .ebook-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  line-height: 18px;
-  padding: 1px 9px;
-  border-radius: 10px;
+  gap: 4px;
+  height: auto;
+  font-size: 10px;
+  line-height: 15px;
+  padding: 0 7px;
+  border-radius: 8px;
   color: var(--text-muted);
   background: var(--background-modifier-form-field);
   box-shadow: none;
@@ -107,15 +105,16 @@
 
 .ebook-chip-count {
   font-variant-numeric: tabular-nums;
-  opacity: 0.6;
-  font-size: 10px;
+  opacity: 0.65;
+  font-size: 9px;
 }
 
 .ebook-count {
-  padding: 0 14px 8px;
-  font-size: 11px;
-  color: var(--text-faint);
   flex: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .ebook-hint {
@@ -229,54 +228,67 @@
   letter-spacing: 0.03em;
 }
 
-/* Beschriftung — feste Höhe, sonst bricht die Virtualisierung */
+/* Beschriftung — feste Gesamthöhe, sonst bricht die Virtualisierung.
+   Titel und Autor fließen oben zusammen, Tags und Größe hängen unten. */
 
-.ebook-title,
-.ebook-author,
-.ebook-foot {
+.ebook-meta {
+  display: flex;
+  flex-direction: column;
+  height: var(--ebook-meta-height);
   overflow: hidden;
 }
 
 .ebook-title {
   font-weight: 500;
   color: var(--text-normal);
-  height: calc(2 * var(--ebook-line-height));
+  max-height: calc(2 * var(--ebook-line-height));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .ebook-author {
   color: var(--text-muted);
   height: var(--ebook-line-height);
   white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ebook-foot {
+.ebook-tagrow {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  gap: 3px;
+  margin-top: auto;
   height: var(--ebook-line-height);
+  align-items: center;
+  overflow: hidden;
+}
+
+.ebook-minichip {
+  flex: none;
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 14px;
+  padding: 0 6px;
+  border-radius: 7px;
+  color: var(--text-faint);
+  background: var(--background-modifier-form-field);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ebook-minichip.is-more {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
 }
 
 .ebook-size {
+  height: var(--ebook-line-height);
   font-variant-numeric: tabular-nums;
   color: var(--text-faint);
-  flex: none;
-}
-
-.ebook-minitag {
-  font-size: 10px;
-  line-height: 15px;
-  padding: 0 6px;
-  border-radius: 8px;
-  color: var(--text-faint);
-  background: var(--background-modifier-form-field);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ebook-empty {

@@ -6,6 +6,7 @@ import {
 	TFile,
 	WorkspaceLeaf,
 	debounce,
+	setIcon,
 	setTooltip,
 } from "obsidian";
 import { FIELD, catalogNotes, readHash } from "./note";
@@ -52,6 +53,7 @@ export class LibraryView extends ItemView {
 
 	private columns = 1;
 	private rowHeight = 240;
+	private tagLimit = 2;
 	private renderedRange: [number, number] = [-1, -1];
 
 	constructor(
@@ -79,7 +81,6 @@ export class LibraryView extends ItemView {
 
 		this.buildToolbar();
 		this.tagsEl = this.contentEl.createDiv("ebook-tags");
-		this.countEl = this.contentEl.createDiv("ebook-count");
 
 		this.scrollEl = this.contentEl.createDiv("ebook-scroll");
 		this.sizerEl = this.scrollEl.createDiv("ebook-sizer");
@@ -120,29 +121,36 @@ export class LibraryView extends ItemView {
 			),
 		);
 
+		this.countEl = bar.createDiv("ebook-count");
+
 		const formatGroup = bar.createDiv("ebook-formats");
 		for (const format of BOOK_EXTENSIONS) {
-			const button = new ButtonComponent(formatGroup)
-				.setButtonText(format.toUpperCase())
-				.setClass("ebook-toggle")
-				.setCta();
-			button.onClick(() => {
-				const on = !this.formats.has(format);
-				if (on) this.formats.add(format);
-				else this.formats.delete(format);
-				if (on) button.setCta();
-				else button.removeCta();
+			const chip = formatGroup.createEl("button", {
+				cls: "ebook-chip is-on",
+				text: format.toUpperCase(),
+			});
+			setTooltip(chip, `${format.toUpperCase()}-Bücher zeigen`);
+			this.registerDomEvent(chip, "click", () => {
+				if (this.formats.has(format)) this.formats.delete(format);
+				else this.formats.add(format);
+				chip.toggleClass("is-on", this.formats.has(format));
 				this.applyFilters();
 			});
 		}
 
 		const zoomWrap = bar.createDiv("ebook-zoom");
 		setTooltip(zoomWrap, "Größe der Cover");
-		zoomWrap.createSpan({ cls: "ebook-zoom-icon", text: "A" });
+		setIcon(zoomWrap.createSpan("ebook-zoom-icon"), "zoom-in");
+
+		const readout = zoomWrap.createSpan({ cls: "ebook-zoom-value" });
+		const showZoom = (value: number) => readout.setText(`${value} %`);
+		showZoom(this.host.zoom);
+
 		new SliderComponent(zoomWrap)
 			.setLimits(60, 260, 5)
 			.setValue(this.host.zoom)
 			.onChange((value) => {
+				showZoom(value);
 				this.applyZoom(value);
 				this.host.saveZoom(value);
 				this.renderedRange = [-1, -1];
@@ -150,9 +158,9 @@ export class LibraryView extends ItemView {
 			});
 
 		const scan = new ButtonComponent(bar)
-			.setButtonText("Scannen")
+			.setIcon("refresh-cw")
 			.setClass("ebook-scan")
-			.setTooltip("Neue Bücher in den Katalog aufnehmen");
+			.setTooltip("Bibliothek scannen, neue Bücher aufnehmen");
 		scan.onClick(() => {
 			scan.setDisabled(true);
 			void this.host.runScan().finally(() => {
@@ -173,13 +181,19 @@ export class LibraryView extends ItemView {
 
 		// Die PDF-Marke wächst gedämpft mit: bei kleinen Covern muss sie lesbar
 		// bleiben, bei großen soll sie nicht ins Bild drängen.
+		// Wie viele Tag-Chips nebeneinander passen, hängt an der Coverbreite.
+		// Konservativ gerechnet, mit Platz für das „+n" am Ende — ein halb
+		// abgeschnittener Chip sieht schlimmer aus als einer weniger.
+		this.tagLimit = Math.min(4, Math.max(1, Math.floor((width - 30) / 70)));
+
 		const mark = Math.round(Math.min(38, Math.max(20, width * 0.22)));
 		this.contentEl.style.setProperty("--ebook-mark-width", `${mark}px`);
 		this.contentEl.style.setProperty("--ebook-mark-height", `${Math.round(mark * 34 / 30)}px`);
 
 		// Feste Höhe je Zelle — sonst lässt sich nicht ausrechnen, welche Zeilen
 		// gerade sichtbar sind, und die Virtualisierung fällt in sich zusammen.
-		const meta = 4 * lineHeight + 10;
+		// Zwei Zeilen Titel, je eine für Autor, Tags und Größe.
+		const meta = 5 * lineHeight + 8;
 		this.contentEl.style.setProperty("--ebook-meta-height", `${meta}px`);
 		this.rowHeight = Math.round(width * 1.5) + meta + GAP;
 		this.measure();
@@ -340,18 +354,31 @@ export class LibraryView extends ItemView {
 		if (entry.format === "pdf") pdfMark(cover);
 		if (entry.orphaned) setTooltip(cell, "Die Buchdatei ist verschwunden");
 
-		const title = cell.createDiv({ cls: "ebook-title", text: entry.title });
+		// Titel und Autor fließen unmittelbar untereinander; Tags und Größe
+		// hängen am unteren Rand, damit sie über alle Zellen auf einer Linie
+		// liegen, egal wie lang der Titel ist.
+		const meta = cell.createDiv("ebook-meta");
+
+		const title = meta.createDiv({ cls: "ebook-title", text: entry.title });
 		setTooltip(title, entry.author ? `${entry.title}\n${entry.author}` : entry.title, {
 			delay: 300,
 		});
 
-		cell.createDiv({ cls: "ebook-author", text: entry.author || "—" });
+		meta.createDiv({ cls: "ebook-author", text: entry.author || "—" });
 
-		const foot = cell.createDiv("ebook-foot");
-		foot.createSpan({ cls: "ebook-size", text: megabytes(entry.size) });
-		for (const tag of entry.tags.slice(0, 2)) {
-			foot.createSpan({ cls: "ebook-minitag", text: tag });
+		// Lieber wenige ganze Chips als viele abgeschnittene: was nicht passt,
+		// wird als Zahl angedeutet statt auf zwei Buchstaben gestutzt.
+		const tagRow = meta.createDiv("ebook-tagrow");
+		for (const tag of entry.tags.slice(0, this.tagLimit)) {
+			tagRow.createSpan({ cls: "ebook-minichip", text: tag });
 		}
+		const hidden = entry.tags.length - this.tagLimit;
+		if (hidden > 0) {
+			const more = tagRow.createSpan({ cls: "ebook-minichip is-more", text: `+${hidden}` });
+			setTooltip(more, entry.tags.join(", "));
+		}
+
+		meta.createDiv({ cls: "ebook-size", text: megabytes(entry.size) });
 
 		this.registerDomEvent(cell, "click", () => {
 			void this.app.workspace.getLeaf("tab").openFile(entry.note);
