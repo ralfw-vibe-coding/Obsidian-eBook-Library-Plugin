@@ -9,4 +9,5 @@ test/.harness.mjs
 test/.scan.test.mjs
 test/.virtual.test.mjs
 test/.history.test.mjs
+test/.lists.test.mjs
 test/browser/bundle.js

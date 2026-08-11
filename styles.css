@@ -482,3 +482,60 @@
   color: var(--text-faint);
   font-size: 13px;
 }
+
+/* Leselisten */
+
+.ebook-lists {
+  flex: none;
+  padding: 3px;
+  color: var(--text-muted);
+}
+
+.ebook-lists:hover {
+  color: var(--text-normal);
+}
+
+/* Im Listenmodus wird nicht virtualisiert — alle Zellen stehen im DOM,
+   damit Ziehen und Ablegen ohne Sonderbehandlung funktioniert. */
+.ebook-library.is-list-mode .ebook-sizer {
+  height: auto !important;
+}
+
+.ebook-library.is-list-mode .ebook-window {
+  position: static;
+  transform: none !important;
+}
+
+.ebook-position {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.is-list-mode .ebook-cell {
+  cursor: grab;
+}
+
+.is-list-mode .ebook-cell.is-dragging {
+  opacity: 0.35;
+}
+
+/* Einfügemarke beim Ziehen */
+.ebook-cell.is-drop-before .ebook-cover {
+  box-shadow: -3px 0 0 0 var(--interactive-accent);
+}
+
+.ebook-cell.is-drop-after .ebook-cover {
+  box-shadow: 3px 0 0 0 var(--interactive-accent);
+}

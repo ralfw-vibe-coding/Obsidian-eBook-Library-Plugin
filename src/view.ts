@@ -10,6 +10,17 @@ import {
 	setTooltip,
 } from "obsidian";
 import { belongsToRun, formatRunTime, type RunRecord } from "./history";
+import { ListPicker } from "./list-picker";
+import {
+	addToList,
+	createList,
+	isListFile,
+	moveInList,
+	readList,
+	readLists,
+	removeFromList,
+	type ReadingList,
+} from "./lists";
 import { LogModal } from "./log";
 import { FIELD, catalogNotes, readHash } from "./note";
 import { BOOK_EXTENSIONS, type BookFormat } from "./types";
@@ -54,6 +65,10 @@ export class LibraryView extends ItemView {
 	private selectedTags = new Set<string>();
 	/** Zeigt nur die Bücher eines bestimmten Ingest-Laufs. */
 	private runFilter: RunRecord | null = null;
+	/** Zeigt nur die Bücher einer Leseliste, in deren Reihenfolge. */
+	private activeList: ReadingList | null = null;
+	/** Position im Raster, von der aus gerade gezogen wird. */
+	private dragFrom: number | null = null;
 
 	private tagsEl!: HTMLElement;
 	private countEl!: HTMLElement;
@@ -133,6 +148,10 @@ export class LibraryView extends ItemView {
 
 		this.countEl = bar.createDiv("ebook-count");
 		this.registerDomEvent(this.countEl, "click", () => {
+			if (this.activeList) {
+				void this.setActiveList(null);
+				return;
+			}
 			if (!this.runFilter) return;
 			this.runFilter = null;
 			this.applyFilters();
@@ -176,6 +195,11 @@ export class LibraryView extends ItemView {
 			this.paint();
 		});
 
+		const lists = bar.createEl("button", { cls: "clickable-icon ebook-lists" });
+		setTooltip(lists, "Leselisten");
+		safeIcon(lists, "list-ordered", "Listen");
+		this.registerDomEvent(lists, "click", (event) => void this.showListMenu(event));
+
 		const history = bar.createEl("button", { cls: "clickable-icon ebook-history" });
 		setTooltip(history, "Zugänge und Protokoll");
 		safeIcon(history, "history", "Zugänge");
@@ -191,6 +215,132 @@ export class LibraryView extends ItemView {
 				this.reload();
 			});
 		});
+	}
+
+	/**
+	 * Die Leselisten. Eine ausgewählt heißt: nur ihre Bücher, in ihrer
+	 * Reihenfolge, und umsortierbar.
+	 */
+	private async showListMenu(event: MouseEvent): Promise<void> {
+		const lists = await readLists(this.app);
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Alle Bücher")
+				.setIcon("library-big")
+				.setChecked(this.activeList === null)
+				.onClick(() => void this.setActiveList(null)),
+		);
+
+		if (lists.length > 0) {
+			menu.addSeparator();
+			for (const list of lists) {
+				menu.addItem((item) =>
+					item
+						.setTitle(`${list.name} · ${list.books.length}`)
+						.setChecked(this.activeList?.file.path === list.file.path)
+						.onClick(() => void this.setActiveList(list)),
+				);
+			}
+		}
+
+		menu.addSeparator();
+		menu.addItem((item) =>
+			item
+				.setTitle("Neue Liste …")
+				.setIcon("plus")
+				.onClick(() => {
+					new ListPicker(this.app, "Neue Leseliste", (file, newName) => {
+						if (!newName) return;
+						void createList(this.app, newName).then((created) =>
+							this.setActiveList(readList(this.app, created)),
+						);
+					}).open();
+				}),
+		);
+
+		menu.showAtMouseEvent(event);
+	}
+
+	private async setActiveList(list: ReadingList | Promise<ReadingList> | null): Promise<void> {
+		this.activeList = list ? await list : null;
+		if (this.activeList) this.runFilter = null;
+
+		this.contentEl.toggleClass("is-list-mode", this.activeList !== null);
+		this.applyFilters();
+	}
+
+	/** Kontextmenü eines Buchs: Listenzugehörigkeit und Position. */
+	private showBookMenu(event: MouseEvent, entry: Entry, position: number): void {
+		event.preventDefault();
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Zu Leseliste hinzufügen …")
+				.setIcon("list-plus")
+				.onClick(() => this.addToSomeList(entry)),
+		);
+
+		const list = this.activeList;
+		if (list) {
+			menu.addSeparator();
+			if (position > 0) {
+				menu.addItem((item) =>
+					item
+						.setTitle("An den Anfang")
+						.setIcon("arrow-up")
+						.onClick(() => void this.reorder(position, 0)),
+				);
+			}
+			if (position < this.shown.length - 1) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Ans Ende")
+						.setIcon("arrow-down")
+						.onClick(() => void this.reorder(position, this.shown.length)),
+				);
+			}
+			menu.addSeparator();
+			menu.addItem((item) =>
+				item
+					.setTitle(`Aus „${list.name}“ entfernen`)
+					.setIcon("trash-2")
+					.onClick(() => {
+						void removeFromList(this.app, list.file, entry.note).then(() =>
+							this.setActiveList(readList(this.app, list.file)),
+						);
+					}),
+			);
+		}
+
+		menu.showAtMouseEvent(event);
+	}
+
+	private addToSomeList(entry: Entry): void {
+		new ListPicker(this.app, "Zu Leseliste hinzufügen", (file, newName) => {
+			const target = file ? Promise.resolve(file) : createList(this.app, newName ?? "Leseliste");
+			void target.then(async (list) => {
+				const added = await addToList(this.app, list, entry.note);
+				new Notice(
+					added
+						? `„${entry.title}“ zu „${list.basename}“ hinzugefügt.`
+						: `„${entry.title}“ steht schon in „${list.basename}“.`,
+				);
+				if (this.activeList?.file.path === list.path) {
+					await this.setActiveList(readList(this.app, list));
+				}
+			});
+		}).open();
+	}
+
+	private async reorder(from: number, to: number): Promise<void> {
+		const list = this.activeList;
+		if (!list) return;
+
+		await moveInList(this.app, list.file, from, to);
+		await this.setActiveList(readList(this.app, list.file));
 	}
 
 	/**
@@ -317,6 +467,8 @@ export class LibraryView extends ItemView {
 		const entries: Entry[] = [];
 
 		for (const note of catalogNotes(this.app)) {
+			if (isListFile(note)) continue;
+
 			const frontmatter = this.app.metadataCache.getFileCache(note)?.frontmatter;
 			if (!frontmatter || !readHash(frontmatter)) continue;
 
@@ -387,13 +539,26 @@ export class LibraryView extends ItemView {
 	private applyFilters(): void {
 		const words = this.query.split(/\s+/).filter(Boolean);
 
+		// Im Listenmodus bestimmt die Liste, welche Bücher es gibt und in welcher
+		// Reihenfolge; Suche und Filter grenzen darin weiter ein.
+		const positions = this.activeList
+			? new Map(this.activeList.books.map((book, index) => [book.path, index]))
+			: null;
+
 		this.shown = this.entries.filter((entry) => {
+			if (positions && !positions.has(entry.note.path)) return false;
 			if (this.runFilter && !belongsToRun(entry.ingested, this.runFilter)) return false;
 			if (!this.formats.has(entry.format)) return false;
 			for (const tag of this.selectedTags) if (!entry.tags.includes(tag)) return false;
 			for (const word of words) if (!entry.haystack.includes(word)) return false;
 			return true;
 		});
+
+		if (positions) {
+			this.shown.sort(
+				(a, b) => (positions.get(a.note.path) ?? 0) - (positions.get(b.note.path) ?? 0),
+			);
+		}
 
 		this.renderCount();
 
@@ -406,7 +571,13 @@ export class LibraryView extends ItemView {
 	private renderCount(): void {
 		const total = this.entries.length;
 		this.countEl.empty();
-		this.countEl.toggleClass("is-filtered", this.runFilter !== null);
+		this.countEl.toggleClass("is-filtered", this.runFilter !== null || this.activeList !== null);
+
+		if (this.activeList) {
+			this.countEl.setText(`${this.activeList.name} · ${this.shown.length}`);
+			setTooltip(this.countEl, "Leseliste verlassen");
+			return;
+		}
 
 		if (this.runFilter) {
 			this.countEl.setText(
@@ -429,6 +600,14 @@ export class LibraryView extends ItemView {
 	 * Büchern hängen dadurch nie mehr als ein paar Dutzend Zellen im DOM.
 	 */
 	private paint(): void {
+		// Im Listenmodus ohne Virtualisierung: der Zwang dazu kam von tausenden
+		// Büchern, eine Leseliste hat Dutzende. Alle Zellen wirklich im DOM zu
+		// haben, macht Ziehen und Ablegen erst unkompliziert.
+		if (this.activeList) {
+			this.paintAll();
+			return;
+		}
+
 		const rows = rowCount(this.shown.length, this.columns);
 		this.sizerEl.style.height = `${rows * this.rowHeight}px`;
 
@@ -447,21 +626,36 @@ export class LibraryView extends ItemView {
 
 		for (let index = first * this.columns; index < last * this.columns; index++) {
 			const entry = this.shown[index];
-			if (entry) this.renderCell(this.windowEl, entry);
+			if (entry) this.renderCell(this.windowEl, entry, index);
 		}
 
-		if (this.shown.length === 0) {
-			this.windowEl.createDiv({
-				cls: "ebook-empty",
-				text:
-					this.entries.length === 0
-						? "Der Katalog ist leer. Mit „Scannen“ die Bibliothek einlesen."
-						: "Kein Buch passt zu diesen Filtern.",
-			});
-		}
+		this.renderEmptyHint();
 	}
 
-	private renderCell(parent: HTMLElement, entry: Entry): void {
+	private paintAll(): void {
+		this.sizerEl.style.height = "auto";
+		this.windowEl.style.transform = "none";
+		this.windowEl.empty();
+		this.renderedRange = [-1, -1];
+
+		this.shown.forEach((entry, index) => this.renderCell(this.windowEl, entry, index));
+		this.renderEmptyHint();
+	}
+
+	private renderEmptyHint(): void {
+		if (this.shown.length > 0) return;
+
+		this.windowEl.createDiv({
+			cls: "ebook-empty",
+			text: this.activeList
+				? `„${this.activeList.name}“ ist leer. Bücher über das Kontextmenü hinzufügen.`
+				: this.entries.length === 0
+					? "Der Katalog ist leer. Mit „Scannen“ die Bibliothek einlesen."
+					: "Kein Buch passt zu diesen Filtern.",
+		});
+	}
+
+	private renderCell(parent: HTMLElement, entry: Entry, position: number): void {
 		const cell = parent.createDiv("ebook-cell");
 		cell.toggleClass("is-orphaned", entry.orphaned);
 
@@ -472,6 +666,7 @@ export class LibraryView extends ItemView {
 			cover.createDiv({ cls: "ebook-nocover", text: entry.title });
 		}
 		if (entry.format === "pdf") pdfMark(cover);
+		if (this.activeList) cover.createSpan({ cls: "ebook-position", text: String(position + 1) });
 		if (entry.orphaned) setTooltip(cell, "Die Buchdatei ist verschwunden");
 
 		// Titel, Autor, Tags, Größe fließen ohne Zwischenraum untereinander.
@@ -500,6 +695,61 @@ export class LibraryView extends ItemView {
 		this.registerDomEvent(cell, "click", () => {
 			void this.app.workspace.getLeaf("tab").openFile(entry.note);
 		});
+
+		this.registerDomEvent(cell, "contextmenu", (event) =>
+			this.showBookMenu(event, entry, position),
+		);
+
+		if (this.activeList) this.makeDraggable(cell, position);
+	}
+
+	/** Umsortieren im Listenmodus. */
+	private makeDraggable(cell: HTMLElement, position: number): void {
+		cell.draggable = true;
+
+		this.registerDomEvent(cell, "dragstart", (event) => {
+			this.dragFrom = position;
+			cell.addClass("is-dragging");
+			event.dataTransfer?.setData("text/plain", String(position));
+			if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+		});
+
+		this.registerDomEvent(cell, "dragend", () => {
+			this.dragFrom = null;
+			this.clearDropMarks();
+		});
+
+		this.registerDomEvent(cell, "dragover", (event) => {
+			if (this.dragFrom === null) return;
+			event.preventDefault();
+			if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+
+			const rect = cell.getBoundingClientRect();
+			const before = event.clientX < rect.left + rect.width / 2;
+			this.clearDropMarks();
+			cell.addClass(before ? "is-drop-before" : "is-drop-after");
+		});
+
+		this.registerDomEvent(cell, "drop", (event) => {
+			if (this.dragFrom === null) return;
+			event.preventDefault();
+
+			const rect = cell.getBoundingClientRect();
+			const before = event.clientX < rect.left + rect.width / 2;
+			const from = this.dragFrom;
+
+			this.dragFrom = null;
+			this.clearDropMarks();
+			void this.reorder(from, before ? position : position + 1);
+		});
+	}
+
+	private clearDropMarks(): void {
+		for (const marked of Array.from(
+			this.windowEl.querySelectorAll(".is-drop-before, .is-drop-after, .is-dragging"),
+		)) {
+			marked.removeClasses(["is-drop-before", "is-drop-after", "is-dragging"]);
+		}
 	}
 }
 

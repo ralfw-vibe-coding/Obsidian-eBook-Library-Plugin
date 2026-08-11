@@ -26,12 +26,14 @@ await esbuild.build({
 });
 
 await esbuild.build({
-	entryPoints: ["test/scan.test.ts"],
+	entryPoints: ["test/scan.test.ts", "test/lists.test.ts"],
 	bundle: true,
 	platform: "node",
 	format: "esm",
 	packages: "external",
-	outfile: "test/.scan.test.mjs",
+	outdir: "test",
+	entryNames: ".[name]",
+	outExtension: { ".js": ".mjs" },
 	logLevel: "warning",
 	// Der Scanner spricht die Obsidian-API an; hier tritt der Ersatz an ihre Stelle.
 	alias: { obsidian: "./test/obsidian-stub.ts" },

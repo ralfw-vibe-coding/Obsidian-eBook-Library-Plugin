@@ -45,6 +45,29 @@ dem es hakte, von dort springt man in dessen Notiz.
 Die Historie liegt in der `data.json` des Plugins, nicht als Markdown in der
 Vault. Aufgehoben werden die letzten 30 Läufe.
 
+## Leselisten
+
+Rechtsklick auf ein Buch → „Zu Leseliste hinzufügen …". Der Dialog zeigt die
+vorhandenen Listen; tippt man einen neuen Namen, entsteht die Liste.
+
+Das Listensymbol in der Leiste öffnet das Menü aller Listen. Eine ausgewählt
+schaltet den Katalog in den Listenmodus: nur ihre Bücher, in Listenreihenfolge,
+mit Positionsnummer auf dem Cover. Umsortiert wird durch Ziehen und Ablegen; im
+Kontextmenü stehen zusätzlich „An den Anfang" und „Ans Ende", dort wird auch
+entfernt.
+
+Je Liste eine Markdown-Datei unter `_catalog/readinglists/`, der Dateiname ist
+der Titel:
+
+```markdown
+- [[The Gene - Siddhartha Mukherjee]]
+- [[Alexandria - Paul Kingsnorth]]
+```
+
+Verwiesen wird per Wikilink, weil Obsidian die beim Umbenennen einer Buchnotiz
+selbst nachzieht. Geschrieben wird nur der zusammenhängende Block der
+`- [[…]]`-Zeilen — was du darüber oder darunter schreibst, bleibt stehen.
+
 ## Entwickeln
 
 ```bash
