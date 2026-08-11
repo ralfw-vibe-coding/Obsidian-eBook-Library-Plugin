@@ -10,10 +10,12 @@ das EPUB-ZIP, `DOMParser` liest das OPF-XML, `pdf.js` rendert die erste PDF-Seit
 ## Was es tut
 
 Der Katalog wird über einen eigenen View bedient — Regalbrett mit Covern, Suche,
-Format- und Tag-Filtern, Zoom. Die Tag-Leiste hat eine eigene Sucheingabe: bei
-hunderten Tags sind höchstens vierzig Chips zu sehen, der Rest ist über die Suche
-erreichbar. Gewählte Tags stehen immer vorn und bleiben sichtbar. Die Markdown-Notizen sind reine Datenhaltung; man
+Format- und Tag-Filtern, Zoom. Die Markdown-Notizen sind reine Datenhaltung; man
 muss sie nicht öffnen.
+
+Die Tag-Leiste hat eine eigene Sucheingabe: bei hunderten Tags sind höchstens
+vierzig Chips zu sehen, der Rest ist über die Suche erreichbar. Gewählte Tags
+stehen immer vorn und bleiben sichtbar.
 
 Ein Scan geht alle `.epub`- und `.pdf`-Dateien der Vault durch und legt zu jedem
 neuen Buch eine Notiz unter `_catalog/` an — mit Titel, Autor, Jahr, Sprache,
@@ -36,7 +38,7 @@ Verschwundene Bücher werden markiert, nie gelöscht.
 ## Zugänge und Protokoll
 
 Jeder Ingest-Lauf bekommt einen Zeitstempel, der als `ingested` in den Notizen
-landet. Das Postfach-Symbol in der Leiste öffnet ein Menü mit den letzten Läufen,
+landet. Das Verlaufs-Symbol in der Leiste öffnet ein Menü mit den letzten Läufen,
 neuester zuerst, je mit Datum und Anzahl. Einer ausgewählt heißt: der Katalog
 zeigt nur dessen Bücher.
 
