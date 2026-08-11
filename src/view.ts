@@ -1,5 +1,7 @@
 import {
 	ItemView,
+	Menu,
+	Notice,
 	SearchComponent,
 	TFile,
 	WorkspaceLeaf,
@@ -7,6 +9,8 @@ import {
 	setIcon,
 	setTooltip,
 } from "obsidian";
+import { belongsToRun, formatRunTime, type RunRecord } from "./history";
+import { LogModal } from "./log";
 import { FIELD, catalogNotes, readHash } from "./note";
 import { BOOK_EXTENSIONS, type BookFormat } from "./types";
 import { columnsFor, rowCount, visibleRows } from "./virtual";
@@ -18,6 +22,8 @@ export interface LibraryHost {
 	runScan(): Promise<void>;
 	zoom: number;
 	saveZoom(zoom: number): void;
+	/** Protokoll der letzten Ingest-Läufe, neuester zuerst. */
+	runs: RunRecord[];
 }
 
 interface Entry {
@@ -27,6 +33,10 @@ interface Entry {
 	tags: string[];
 	format: BookFormat;
 	size: number;
+	/** Pfad der Buchdatei — für den Bezug aus dem Protokoll. */
+	bookPath: string;
+	/** Zeitstempel des Laufs, der das Buch aufgenommen hat. */
+	ingested: string;
 	coverUrl: string | null;
 	orphaned: boolean;
 	/** Kleingeschrieben, für die Suche. Einmal beim Einlesen gebaut. */
@@ -42,6 +52,8 @@ export class LibraryView extends ItemView {
 	private query = "";
 	private formats = new Set<BookFormat>(BOOK_EXTENSIONS);
 	private selectedTags = new Set<string>();
+	/** Zeigt nur die Bücher eines bestimmten Ingest-Laufs. */
+	private runFilter: RunRecord | null = null;
 
 	private tagsEl!: HTMLElement;
 	private countEl!: HTMLElement;
@@ -120,6 +132,11 @@ export class LibraryView extends ItemView {
 		);
 
 		this.countEl = bar.createDiv("ebook-count");
+		this.registerDomEvent(this.countEl, "click", () => {
+			if (!this.runFilter) return;
+			this.runFilter = null;
+			this.applyFilters();
+		});
 
 		const formatGroup = bar.createDiv("ebook-formats");
 		for (const format of BOOK_EXTENSIONS) {
@@ -159,6 +176,11 @@ export class LibraryView extends ItemView {
 			this.paint();
 		});
 
+		const history = bar.createEl("button", { cls: "clickable-icon ebook-history" });
+		setTooltip(history, "Zugänge und Protokoll");
+		setIcon(history, "inbox");
+		this.registerDomEvent(history, "click", (event) => this.showRunMenu(event));
+
 		const scan = bar.createEl("button", { cls: "clickable-icon ebook-scan" });
 		setTooltip(scan, "Bibliothek scannen, neue Bücher aufnehmen");
 		scanIcon(scan);
@@ -169,6 +191,77 @@ export class LibraryView extends ItemView {
 				this.reload();
 			});
 		});
+	}
+
+	/**
+	 * Die Zugänge: welcher Lauf hat was gebracht. Ein Lauf ausgewählt heißt,
+	 * nur dessen Bücher zu sehen — der Katalog bleibt der Katalog.
+	 */
+	private showRunMenu(event: MouseEvent): void {
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Alle Bücher")
+				.setIcon("library-big")
+				.setChecked(this.runFilter === null)
+				.onClick(() => {
+					this.runFilter = null;
+					this.applyFilters();
+				}),
+		);
+
+		const withNew = this.host.runs.filter((run) => run.ingested > 0);
+		if (withNew.length > 0) {
+			menu.addSeparator();
+			for (const run of withNew) {
+				menu.addItem((item) =>
+					item
+						.setTitle(
+							`${formatRunTime(run.id)} · ${run.ingested} ${run.ingested === 1 ? "Buch" : "Bücher"}`,
+						)
+						.setChecked(this.runFilter?.id === run.id)
+						.onClick(() => {
+							this.runFilter = run;
+							this.applyFilters();
+						}),
+				);
+			}
+		}
+
+		menu.addSeparator();
+		menu.addItem((item) =>
+			item
+				.setTitle("Protokoll …")
+				.setIcon("scroll-text")
+				.onClick(() => this.openLog()),
+		);
+
+		menu.showAtMouseEvent(event);
+	}
+
+	private openLog(): void {
+		if (this.host.runs.length === 0) {
+			new Notice("Es hat noch kein Ingest stattgefunden.");
+			return;
+		}
+
+		new LogModal(
+			this.app,
+			this.host.runs,
+			(bookPath) => this.openBook(bookPath),
+			this.runFilter?.id,
+		).open();
+	}
+
+	/** Aus dem Protokoll zum Buch springen — sofern es eine Notiz dazu gibt. */
+	private openBook(bookPath: string): void {
+		const entry = this.entries.find((candidate) => candidate.bookPath === bookPath);
+		if (!entry) {
+			new Notice("Zu dieser Datei gibt es keine Katalog-Notiz.");
+			return;
+		}
+		void this.app.workspace.getLeaf("tab").openFile(entry.note);
 	}
 
 	private applyZoom(zoom: number): void {
@@ -240,6 +333,8 @@ export class LibraryView extends ItemView {
 				tags,
 				format,
 				size: Number(frontmatter[FIELD.size]) || 0,
+				bookPath: String(frontmatter[FIELD.file] ?? ""),
+				ingested: String(frontmatter[FIELD.ingested] ?? ""),
 				coverUrl: this.resolveCover(frontmatter[FIELD.cover], note),
 				orphaned: Boolean(frontmatter[FIELD.orphaned]),
 				haystack: `${title} ${author}`.toLowerCase(),
@@ -293,22 +388,40 @@ export class LibraryView extends ItemView {
 		const words = this.query.split(/\s+/).filter(Boolean);
 
 		this.shown = this.entries.filter((entry) => {
+			if (this.runFilter && !belongsToRun(entry.ingested, this.runFilter)) return false;
 			if (!this.formats.has(entry.format)) return false;
 			for (const tag of this.selectedTags) if (!entry.tags.includes(tag)) return false;
 			for (const word of words) if (!entry.haystack.includes(word)) return false;
 			return true;
 		});
 
+		this.renderCount();
+
+		this.scrollEl.scrollTop = 0;
+		this.renderedRange = [-1, -1];
+		this.paint();
+	}
+
+	/** Ist ein Zugang gewählt, sagt die Zeile das — und hebt ihn per Klick auf. */
+	private renderCount(): void {
 		const total = this.entries.length;
+		this.countEl.empty();
+		this.countEl.toggleClass("is-filtered", this.runFilter !== null);
+
+		if (this.runFilter) {
+			this.countEl.setText(
+				`Zugang ${formatRunTime(this.runFilter.id)} · ${this.shown.length}`,
+			);
+			setTooltip(this.countEl, "Zugangsfilter aufheben");
+			return;
+		}
+
+		setTooltip(this.countEl, "");
 		this.countEl.setText(
 			this.shown.length === total
 				? `${total} ${total === 1 ? "Buch" : "Bücher"}`
 				: `${this.shown.length} von ${total} Büchern`,
 		);
-
-		this.scrollEl.scrollTop = 0;
-		this.renderedRange = [-1, -1];
-		this.paint();
 	}
 
 	/**

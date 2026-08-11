@@ -9,6 +9,10 @@ das EPUB-ZIP, `DOMParser` liest das OPF-XML, `pdf.js` rendert die erste PDF-Seit
 
 ## Was es tut
 
+Der Katalog wird über einen eigenen View bedient — Regalbrett mit Covern, Suche,
+Format- und Tag-Filtern, Zoom. Die Markdown-Notizen sind reine Datenhaltung; man
+muss sie nicht öffnen.
+
 Ein Scan geht alle `.epub`- und `.pdf`-Dateien der Vault durch und legt zu jedem
 neuen Buch eine Notiz unter `_catalog/` an — mit Titel, Autor, Jahr, Sprache,
 Dateigröße und Tags im Frontmatter, dazu ein Cover unter `_catalog/covers/`.
@@ -27,7 +31,19 @@ Verschwundene Bücher werden markiert, nie gelöscht.
 | **Metadaten und Cover aller Bücher neu einlesen** | Nach einer Verbesserung der Extraktion im Plugin. Ein Scan hilft dafür nicht — die Bücher haben sich ja nicht geändert, nur das Auslesen. Tags und Notiztext bleiben unangetastet. |
 | **Metadaten und Cover dieses Buchs neu einlesen** | Dasselbe für die gerade geöffnete Katalog-Notiz. |
 
-Das Ergebnis jedes Scans steht in `_catalog/_ingest-report.md`.
+## Zugänge und Protokoll
+
+Jeder Ingest-Lauf bekommt einen Zeitstempel, der als `ingested` in den Notizen
+landet. Das Postfach-Symbol in der Leiste öffnet ein Menü mit den letzten Läufen,
+neuester zuerst, je mit Datum und Anzahl. Einer ausgewählt heißt: der Katalog
+zeigt nur dessen Bücher.
+
+Dasselbe Menü öffnet das Protokoll. Bei Erfolg steht dort eine Zeile mit Zahlen;
+ausführlich wird es nur bei Fehlschlägen — Begründung und Bezug auf das Buch, bei
+dem es hakte, von dort springt man in dessen Notiz.
+
+Die Historie liegt in der `data.json` des Plugins, nicht als Markdown in der
+Vault. Aufgehoben werden die letzten 30 Läufe.
 
 ## Entwickeln
 

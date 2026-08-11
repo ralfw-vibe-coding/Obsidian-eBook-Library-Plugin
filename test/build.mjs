@@ -14,12 +14,14 @@ await esbuild.build({
 });
 
 await esbuild.build({
-	entryPoints: ["test/virtual.test.ts"],
+	entryPoints: ["test/virtual.test.ts", "test/history.test.ts"],
 	bundle: true,
 	platform: "node",
 	format: "esm",
 	packages: "external",
-	outfile: "test/.virtual.test.mjs",
+	outdir: "test",
+	entryNames: ".[name]",
+	outExtension: { ".js": ".mjs" },
 	logLevel: "warning",
 });
 

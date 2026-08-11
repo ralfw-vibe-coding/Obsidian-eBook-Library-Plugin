@@ -2,6 +2,7 @@ import type { App, TFile } from "obsidian";
 import { extractEpub } from "./epub";
 import { parseFileName } from "./filename";
 import { sha256 } from "./hash";
+import { runId } from "./history";
 import { mergeMeta } from "./merge";
 import { normalizeCover } from "./cover";
 import {
@@ -41,6 +42,7 @@ export interface ScanOptions {
  */
 export async function scanLibrary(app: App, options: ScanOptions = {}): Promise<ScanResult> {
 	const result: ScanResult = {
+		runId: runId(new Date()),
 		scanned: 0,
 		skipped: 0,
 		ingested: [],
@@ -170,7 +172,7 @@ async function ingest(
 		meta,
 		tags: tagsFromPath(file.path),
 		coverFileName,
-		today,
+		ingestedAt: result.runId,
 	});
 }
 
@@ -220,6 +222,7 @@ async function markMissingAsOrphaned(
  */
 export async function reingestAll(app: App, options: ScanOptions = {}): Promise<ScanResult> {
 	const result: ScanResult = {
+		runId: runId(new Date()),
 		scanned: 0,
 		skipped: 0,
 		ingested: [],

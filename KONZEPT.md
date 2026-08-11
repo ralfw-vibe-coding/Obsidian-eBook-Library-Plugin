@@ -26,10 +26,14 @@ Markdown-Dateien.
 ## 2. Grundidee
 
 Pro Buch entsteht eine Markdown-Notiz mit den Metadaten im Frontmatter und einer
-Cover-Bilddatei. Damit übernimmt Obsidian den gesamten Rest: Suche, Tags,
-Filtern, Sortieren, Kartenansicht über Bases — und die Notiz hat einen Body, in
-den eigene Gedanken, Zitate und Rezensionen passen. Das ist der Mehrwert
-gegenüber einem reinen Katalogprogramm.
+Cover-Bilddatei. Damit fällt vieles ab, was Obsidian ohnehin kann: Volltextsuche,
+Tags, Verlinkung — und die Notiz hat einen Body, in den eigene Gedanken, Zitate
+und Rezensionen passen. Das ist der Mehrwert gegenüber einem reinen
+Katalogprogramm.
+
+Die Notizen sind dabei **Datenhaltung, keine Bedienoberfläche**. Bedient wird die
+Bibliothek über den eigenen View (Abschnitt 9); die Markdown-Dateien muss man
+nicht zu Gesicht bekommen.
 
 ## 3. Physische Ordner vs. Katalog
 
@@ -53,7 +57,6 @@ dem anderen untergeordnet wäre.
   Abendlektüre/…
   _catalog/
     Titel - Autor.md           eine Notiz pro Buch
-    _ingest-report.md          generiert, Ergebnis des letzten Scans
     covers/
       <hash>.jpg               Cover, nach Hash benannt
 ```
@@ -77,7 +80,7 @@ file: "Sachbücher/Biologie/The gene … Mukherjee.epub"
 format: epub                   epub | pdf
 size: 4823901                  Bytes, als Zahl (damit korrekt sortiert wird)
 cover: "[[a3f91c….jpg]]"       Wikilink, damit Obsidian ihn auflösen kann
-ingested: 2026-08-11
+ingested: "2026-08-11T15:42:07"   Zeitstempel des Laufs, der es aufnahm
 
 # bibliographisch — beim Ingest ermittelt, danach von Hand korrigierbar
 title: The Gene — An Intimate History
@@ -267,21 +270,43 @@ Tag-Erzeugung — sonst würde aus „Abendlektüre" das Tag `abendlektu-re`.
 
 ## 9. Oberfläche
 
-**Zunächst keine eigene.** Das Plugin ist Scanner und Extraktor; die Ansicht ist
-eine mitgelieferte `.base`-Datei mit Kartenlayout und Cover-Bild.
+Ein eigener View mit Ribbon-Icon, von dem aus alles bedient wird. Die
+Markdown-Notizen sind Datenhaltung, keine Bedienoberfläche — man muss sie nicht
+zu Gesicht bekommen, um mit der Bibliothek zu arbeiten.
 
-Begründung: Der wertvolle und schwierige Teil ist der Ingest. Bases liefert
-Kartenansicht, Filtern, Sortieren, Gruppieren und Inline-Editieren ohne eine
-Zeile Code. Und welche eigene Ansicht wirklich gebraucht wird, weiß man erst
-nach einiger Zeit mit dem fertigen Katalog.
+**Regalbrett**: Cover-Raster mit Titel, Autor, Tags und Größe. Darüber eine
+Leiste mit Volltextsuche über Titel und Autor, Umschaltern für EPUB und PDF,
+Zoom, Zugängen und Scan. Darunter alle Tags des Katalogs als Chips zum Filtern.
 
-Ein eigener `ItemView` bleibt jederzeit nachrüstbar, ohne Migration — er läse
-dieselben Notizen. Er würde sich lohnen für: Mehrfachauswahl mit
-Massenbearbeitung, eigene Aktionen pro Buch, Kontrolle über das Seitenverhältnis
-der Karten (Buchcover sind hochkant).
+**Virtualisiert.** Gezeichnet werden nur die sichtbaren Zeilen plus zwei
+Puffer-Zeilen; bei 500 wie bei 50000 Büchern hängen nie mehr als rund vierzig
+Zellen im DOM. Obsidian bietet dafür keinen Helfer — seine eigene Kartenansicht
+rechnet das ebenso von Hand. Die Rechnung steht in `src/virtual.ts`, getrennt
+vom DOM und mit eigenem Test.
 
-Fehler und Auffälligkeiten des Ingests landen in `_catalog/_ingest-report.md` —
-als Markdown, damit sie auch unterwegs über Dropbox lesbar sind.
+Daraus folgt eine feste Zellenhöhe: ohne sie ließe sich nicht ausrechnen, welche
+Zeile bei welcher Scrollposition sichtbar ist. Titel bricht deshalb nach zwei
+Zeilen ab, Tags nach zwei Chip-Reihen.
+
+### Zugänge und Protokoll
+
+Jeder Ingest-Lauf bekommt einen Zeitstempel, der als `ingested` in den Notizen
+landet. Damit lässt sich jederzeit fragen: welche Bücher kamen bei *diesem* Lauf
+dazu?
+
+Das Icon in der Leiste öffnet ein Menü mit den letzten Läufen, neuester zuerst,
+je mit Datum und Anzahl. Einer ausgewählt heißt: der Katalog zeigt nur dessen
+Bücher — die Inbox ist kein zweiter Ort, sondern eine Sicht auf denselben
+Katalog.
+
+Dasselbe Menü öffnet das **Protokoll**. Bei Erfolg steht dort eine Zeile mit
+Zahlen; ausführlich wird es nur bei Fehlschlägen, jeder mit Begründung und
+Bezug auf das Buch, bei dem es hakte. Von dort springt man in dessen Notiz.
+
+Die Historie liegt in der `data.json` des Plugins, nicht als Markdown in der
+Vault — sie ist Bedienoberfläche, keine Datenhaltung. Aufgehoben werden die
+letzten 30 Läufe mit je höchstens 100 einzeln aufgeführten Fehlschlägen; die
+wahre Anzahl bleibt als Zahl erhalten.
 
 ## 10. Entwicklungsumgebung
 

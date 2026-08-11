@@ -199,6 +199,99 @@
   white-space: nowrap;
 }
 
+.ebook-count.is-filtered {
+  color: var(--tag-color, var(--text-accent));
+  background: var(--tag-background, var(--background-modifier-hover));
+  border-radius: 8px;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+
+.ebook-history,
+.ebook-scan {
+  flex: none;
+  padding: 3px;
+  color: var(--text-muted);
+}
+
+.ebook-history:hover,
+.ebook-scan:hover {
+  color: var(--text-normal);
+}
+
+/* Ingest-Protokoll */
+
+.ebook-log-picker {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.ebook-log-summary {
+  font-size: 14px;
+  color: var(--text-normal);
+  margin-bottom: 4px;
+}
+
+.ebook-log-time {
+  color: var(--text-faint);
+}
+
+.ebook-log-clean,
+.ebook-log-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 0 2px;
+}
+
+.ebook-log-heading {
+  margin: 18px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ebook-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.ebook-log-item {
+  border-left: 2px solid var(--background-modifier-error);
+  padding-left: 10px;
+}
+
+.ebook-log-book {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.ebook-log-book:hover {
+  text-decoration: underline;
+}
+
+.ebook-log-path {
+  font-size: 11px;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.ebook-log-message {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.ebook-log-more {
+  font-size: 12px;
+  color: var(--text-faint);
+  padding-top: 4px;
+}
+
 .ebook-hint {
   font-size: 11px;
   color: var(--text-faint);

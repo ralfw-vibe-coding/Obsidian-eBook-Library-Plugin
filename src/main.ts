@@ -1,6 +1,6 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import { frontmatterOf, readHash } from "./note";
-import { writeReport } from "./report";
+import { appendRun, recordOf, type RunRecord } from "./history";
 import { reingestAll, reingestNote, scanLibrary } from "./scan";
 import type { ScanResult } from "./types";
 import { LibraryView, VIEW_TYPE_LIBRARY, type LibraryHost } from "./view";
@@ -10,9 +10,11 @@ type ScanMode = "scan" | "rehash" | "reingest";
 interface Settings {
 	/** Cover-Breite im Katalog-View, in Pixeln. */
 	zoom: number;
+	/** Protokoll der letzten Ingest-Läufe, neuester zuerst. */
+	runs: RunRecord[];
 }
 
-const DEFAULTS: Settings = { zoom: 100 };
+const DEFAULTS: Settings = { zoom: 100, runs: [] };
 
 export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 	private scanning = false;
@@ -20,6 +22,10 @@ export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 
 	get zoom(): number {
 		return this.config.zoom;
+	}
+
+	get runs(): RunRecord[] {
+		return this.config.runs;
 	}
 
 	async onload(): Promise<void> {
@@ -115,12 +121,17 @@ export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 				notice.setMessage(`${heading} … ${done + 1}/${total}\n${label}`);
 			};
 
+			const started = Date.now();
 			const result =
 				options.mode === "reingest"
 					? await reingestAll(this.app, { onProgress })
 					: await scanLibrary(this.app, { rehashAll: options.mode === "rehash", onProgress });
 
-			await writeReport(this.app, result);
+			this.config.runs = appendRun(
+				this.config.runs,
+				recordOf(result, options.mode, (Date.now() - started) / 1000),
+			);
+			await this.saveData(this.config);
 
 			notice.hide();
 			new Notice(summarize(result, options.mode), 10000);

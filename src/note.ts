@@ -99,7 +99,8 @@ export interface NewNote {
 	meta: BookMeta;
 	tags: string[];
 	coverFileName?: string;
-	today: string;
+	/** Zeitstempel des Laufs, der dieses Buch aufgenommen hat. */
+	ingestedAt: string;
 }
 
 export async function createNote(app: App, note: NewNote): Promise<TFile> {
@@ -121,7 +122,7 @@ function renderNote(note: NewNote): string {
 	if (note.coverFileName) {
 		lines.push(`${FIELD.cover}: ${yamlString(`[[${note.coverFileName}]]`)}`);
 	}
-	lines.push(`${FIELD.ingested}: ${note.today}`);
+	lines.push(`${FIELD.ingested}: ${yamlString(note.ingestedAt)}`);
 
 	lines.push(`${FIELD.title}: ${yamlString(note.meta.title ?? "")}`);
 	lines.push(`${FIELD.author}: ${note.meta.author ? yamlString(note.meta.author) : ""}`);

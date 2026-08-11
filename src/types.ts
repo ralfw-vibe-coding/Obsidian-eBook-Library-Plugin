@@ -1,7 +1,6 @@
 /** Wo der Katalog liegt. Siehe KONZEPT.md, Abschnitt 4. */
 export const CATALOG_FOLDER = "_catalog";
 export const COVERS_FOLDER = `${CATALOG_FOLDER}/covers`;
-export const REPORT_PATH = `${CATALOG_FOLDER}/_ingest-report.md`;
 
 export const BOOK_EXTENSIONS = ["epub", "pdf"] as const;
 export type BookFormat = (typeof BOOK_EXTENSIONS)[number];
@@ -35,6 +34,8 @@ export interface FoundFile {
 }
 
 export interface ScanResult {
+	/** Zeitstempel dieses Laufs; steht so auch im `ingested`-Feld der Notizen. */
+	runId: string;
 	scanned: number;
 	skipped: number;
 	ingested: string[];
