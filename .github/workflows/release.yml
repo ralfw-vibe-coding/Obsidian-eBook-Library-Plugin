@@ -1,0 +1,47 @@
+name: Release
+
+# Ein Tag genügt: `git tag 0.2.0 && git push origin 0.2.0` baut das Plugin und
+# veröffentlicht es. Damit braucht es lokal weder gh noch einen Token — der
+# Runner benutzt den GITHUB_TOKEN, den GitHub ihm für dieses Repo mitgibt.
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Typprüfung und Bündel
+        run: npm run build
+
+      - name: Prüfen, dass der Tag zur manifest.json passt
+        run: |
+          version=$(node -p "require('./manifest.json').version")
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME passt nicht zur Version $version in manifest.json." >&2
+            echo "BRAT sucht das Release anhand dieser Version — sie müssen gleich sein." >&2
+            exit 1
+          fi
+
+      - name: Release veröffentlichen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            main.js manifest.json styles.css
