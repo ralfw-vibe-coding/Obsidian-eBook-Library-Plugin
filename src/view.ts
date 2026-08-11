@@ -186,9 +186,9 @@ export class LibraryView extends ItemView {
 		this.contentEl.style.setProperty("--ebook-small-size", `${smallSize}px`);
 		this.contentEl.style.setProperty("--ebook-small-line", `${smallLine}px`);
 
-		// Wie viele Tags nebeneinander passen, hängt an der Coverbreite. Zu viel
-		// geraten ist unkritisch — die Zeile bekommt dann Auslassungspunkte.
-		this.tagLimit = Math.min(4, Math.max(1, Math.floor(width / 62)));
+		// Mindestens drei Tags sollen ganz sichtbar sein; die zweite Zeile fängt
+		// auf, was bei schmalen Covern nicht nebeneinander passt.
+		this.tagLimit = Math.min(6, Math.max(3, Math.floor(width / 48)));
 
 		// Die PDF-Marke wächst gedämpft mit: bei kleinen Covern muss sie lesbar
 		// bleiben, bei großen soll sie nicht ins Bild drängen.
@@ -198,8 +198,9 @@ export class LibraryView extends ItemView {
 
 		// Feste Höhe je Zelle — sonst lässt sich nicht ausrechnen, welche Zeilen
 		// gerade sichtbar sind, und die Virtualisierung fällt in sich zusammen.
-		// Zwei Zeilen Titel, eine Autor, dazu Tags und Größe im kleinen Satz.
-		const meta = 3 * lineHeight + 2 * smallLine + 4;
+		// Zwei Zeilen Titel, eine Autor, bis zu zwei für die Tags, eine für die
+		// Größe. Ungenutzter Platz fällt ans Zellenende, nicht zwischen die Zeilen.
+		const meta = 3 * lineHeight + 3 * smallLine + 4;
 		this.contentEl.style.setProperty("--ebook-meta-height", `${meta}px`);
 		this.rowHeight = Math.round(width * 1.5) + meta + GAP;
 		this.measure();
@@ -370,15 +371,16 @@ export class LibraryView extends ItemView {
 
 		meta.createDiv({ cls: "ebook-author", text: entry.author || "—" });
 
-		// Tags laufen als eine Zeile durch; was nicht mehr hineinpasst, wird als
-		// Zahl angedeutet. Der Tooltip nennt sie vollständig.
-		const shown = entry.tags.slice(0, this.tagLimit);
-		const hidden = entry.tags.length - shown.length;
-		const tagLine = meta.createDiv({
-			cls: "ebook-tagline",
-			text: shown.join(", ") + (hidden > 0 ? ` +${hidden}` : ""),
-		});
-		if (entry.tags.length > 0) setTooltip(tagLine, entry.tags.join(", "));
+		// Tags als Chips, die bei Bedarf in eine zweite Zeile umbrechen — so sind
+		// auch bei schmalen Covern drei ganze Chips zu sehen. Was darüber hinaus
+		// geht, steht als Zahl am Ende; der Tooltip nennt alle.
+		const tagRow = meta.createDiv("ebook-tagrow");
+		for (const tag of entry.tags.slice(0, this.tagLimit)) {
+			tagRow.createSpan({ cls: "ebook-minichip", text: tag });
+		}
+		const hidden = entry.tags.length - this.tagLimit;
+		if (hidden > 0) tagRow.createSpan({ cls: "ebook-minichip is-more", text: `+${hidden}` });
+		if (entry.tags.length > 0) setTooltip(tagRow, entry.tags.join(", "));
 
 		meta.createDiv({ cls: "ebook-size", text: megabytes(entry.size) });
 
