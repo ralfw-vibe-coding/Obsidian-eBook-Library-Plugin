@@ -1,8 +1,6 @@
 import {
-	ButtonComponent,
 	ItemView,
 	SearchComponent,
-	SliderComponent,
 	TFile,
 	WorkspaceLeaf,
 	debounce,
@@ -146,25 +144,28 @@ export class LibraryView extends ItemView {
 		const showZoom = (value: number) => readout.setText(`${value} %`);
 		showZoom(this.host.zoom);
 
-		new SliderComponent(zoomWrap)
-			.setLimits(60, 260, 5)
-			.setValue(this.host.zoom)
-			.onChange((value) => {
-				showZoom(value);
-				this.applyZoom(value);
-				this.host.saveZoom(value);
-				this.renderedRange = [-1, -1];
-				this.paint();
-			});
+		// Bewusst ein nacktes input statt SliderComponent: die zeigt ihren Wert
+		// selbst noch einmal an und bringt einen klobigen Griff mit.
+		const slider = zoomWrap.createEl("input", {
+			cls: "ebook-slider",
+			attr: { type: "range", min: "60", max: "260", step: "5", value: String(this.host.zoom) },
+		});
+		this.registerDomEvent(slider, "input", () => {
+			const value = Number(slider.value);
+			showZoom(value);
+			this.applyZoom(value);
+			this.host.saveZoom(value);
+			this.renderedRange = [-1, -1];
+			this.paint();
+		});
 
-		const scan = new ButtonComponent(bar)
-			.setIcon("refresh-cw")
-			.setClass("ebook-scan")
-			.setTooltip("Bibliothek scannen, neue Bücher aufnehmen");
-		scan.onClick(() => {
-			scan.setDisabled(true);
+		const scan = bar.createEl("button", { cls: "clickable-icon ebook-scan" });
+		setTooltip(scan, "Bibliothek scannen, neue Bücher aufnehmen");
+		scanIcon(scan);
+		this.registerDomEvent(scan, "click", () => {
+			scan.toggleClass("is-busy", true);
 			void this.host.runScan().finally(() => {
-				scan.setDisabled(false);
+				scan.toggleClass("is-busy", false);
 				this.reload();
 			});
 		});
@@ -175,25 +176,30 @@ export class LibraryView extends ItemView {
 		const fontSize = Math.min(15, Math.max(11, Math.round(11 * (zoom / 100) ** 0.4)));
 		const lineHeight = Math.round(fontSize * 1.35);
 
+		// Tags und Größe laufen kleiner als Titel und Autor.
+		const smallSize = Math.max(9, Math.round(fontSize * 0.82));
+		const smallLine = Math.round(smallSize * 1.45);
+
 		this.contentEl.style.setProperty("--ebook-cover-width", `${width}px`);
 		this.contentEl.style.setProperty("--ebook-font-size", `${fontSize}px`);
 		this.contentEl.style.setProperty("--ebook-line-height", `${lineHeight}px`);
+		this.contentEl.style.setProperty("--ebook-small-size", `${smallSize}px`);
+		this.contentEl.style.setProperty("--ebook-small-line", `${smallLine}px`);
+
+		// Wie viele Tags nebeneinander passen, hängt an der Coverbreite. Zu viel
+		// geraten ist unkritisch — die Zeile bekommt dann Auslassungspunkte.
+		this.tagLimit = Math.min(4, Math.max(1, Math.floor(width / 62)));
 
 		// Die PDF-Marke wächst gedämpft mit: bei kleinen Covern muss sie lesbar
 		// bleiben, bei großen soll sie nicht ins Bild drängen.
-		// Wie viele Tag-Chips nebeneinander passen, hängt an der Coverbreite.
-		// Konservativ gerechnet, mit Platz für das „+n" am Ende — ein halb
-		// abgeschnittener Chip sieht schlimmer aus als einer weniger.
-		this.tagLimit = Math.min(4, Math.max(1, Math.floor((width - 30) / 70)));
-
 		const mark = Math.round(Math.min(38, Math.max(20, width * 0.22)));
 		this.contentEl.style.setProperty("--ebook-mark-width", `${mark}px`);
 		this.contentEl.style.setProperty("--ebook-mark-height", `${Math.round(mark * 34 / 30)}px`);
 
 		// Feste Höhe je Zelle — sonst lässt sich nicht ausrechnen, welche Zeilen
 		// gerade sichtbar sind, und die Virtualisierung fällt in sich zusammen.
-		// Zwei Zeilen Titel, je eine für Autor, Tags und Größe.
-		const meta = 5 * lineHeight + 8;
+		// Zwei Zeilen Titel, eine Autor, dazu Tags und Größe im kleinen Satz.
+		const meta = 3 * lineHeight + 2 * smallLine + 4;
 		this.contentEl.style.setProperty("--ebook-meta-height", `${meta}px`);
 		this.rowHeight = Math.round(width * 1.5) + meta + GAP;
 		this.measure();
@@ -354,9 +360,7 @@ export class LibraryView extends ItemView {
 		if (entry.format === "pdf") pdfMark(cover);
 		if (entry.orphaned) setTooltip(cell, "Die Buchdatei ist verschwunden");
 
-		// Titel und Autor fließen unmittelbar untereinander; Tags und Größe
-		// hängen am unteren Rand, damit sie über alle Zellen auf einer Linie
-		// liegen, egal wie lang der Titel ist.
+		// Titel, Autor, Tags, Größe fließen ohne Zwischenraum untereinander.
 		const meta = cell.createDiv("ebook-meta");
 
 		const title = meta.createDiv({ cls: "ebook-title", text: entry.title });
@@ -366,23 +370,43 @@ export class LibraryView extends ItemView {
 
 		meta.createDiv({ cls: "ebook-author", text: entry.author || "—" });
 
-		// Lieber wenige ganze Chips als viele abgeschnittene: was nicht passt,
-		// wird als Zahl angedeutet statt auf zwei Buchstaben gestutzt.
-		const tagRow = meta.createDiv("ebook-tagrow");
-		for (const tag of entry.tags.slice(0, this.tagLimit)) {
-			tagRow.createSpan({ cls: "ebook-minichip", text: tag });
-		}
-		const hidden = entry.tags.length - this.tagLimit;
-		if (hidden > 0) {
-			const more = tagRow.createSpan({ cls: "ebook-minichip is-more", text: `+${hidden}` });
-			setTooltip(more, entry.tags.join(", "));
-		}
+		// Tags laufen als eine Zeile durch; was nicht mehr hineinpasst, wird als
+		// Zahl angedeutet. Der Tooltip nennt sie vollständig.
+		const shown = entry.tags.slice(0, this.tagLimit);
+		const hidden = entry.tags.length - shown.length;
+		const tagLine = meta.createDiv({
+			cls: "ebook-tagline",
+			text: shown.join(", ") + (hidden > 0 ? ` +${hidden}` : ""),
+		});
+		if (entry.tags.length > 0) setTooltip(tagLine, entry.tags.join(", "));
 
 		meta.createDiv({ cls: "ebook-size", text: megabytes(entry.size) });
 
 		this.registerDomEvent(cell, "click", () => {
 			void this.app.workspace.getLeaf("tab").openFile(entry.note);
 		});
+	}
+}
+
+/**
+ * Lucides `refresh-cw` mit einem Plus in der Mitte: einlesen, was neu ist.
+ * Selbst gezeichnet, weil es die Kombination als fertiges Icon nicht gibt.
+ */
+function scanIcon(parent: HTMLElement): void {
+	const svg = parent.createSvg("svg", {
+		cls: "ebook-scan-icon",
+		attr: { viewBox: "0 0 24 24", "aria-label": "Scannen" },
+	});
+
+	for (const d of [
+		"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8",
+		"M21 3v5h-5",
+		"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16",
+		"M8 16H3v5",
+		"M12 9.2v5.6",
+		"M9.2 12h5.6",
+	]) {
+		svg.createSvg("path", { attr: { d } });
 	}
 }
 
