@@ -27,6 +27,9 @@ const WORDS = [
 const NAMES = ["Berg", "Klein", "Weber", "Roth", "Falk", "Mayer", "Sturm", "Winter", "Lang", "Kern"];
 const FIRST = ["Anna", "Jonas", "Clara", "Felix", "Mira", "Tobias", "Lena", "Ruben", "Ida", "Nils"];
 
+/** Sieht aus wie ein SHA-256 und enthält Buchstaben — reine Ziffern läse YAML als Zahl. */
+const fakeHash = (n) => `${n.toString(16)}`.padStart(8, "0").repeat(8).slice(0, 64);
+
 /** Ohne Zufall, damit zwei Läufe dieselbe Vault ergeben. */
 const pick = (list, n) => list[n % list.length];
 
@@ -50,7 +53,7 @@ for (let i = 0; i < count; i++) {
 
 	const lines = [
 		"---",
-		`hash: ${String(i).padStart(64, "0")}`,
+		`hash: "${fakeHash(i)}"`,
 		`file: "Bücher/${title}.${format}"`,
 		`format: ${format}`,
 		`size: ${size}`,

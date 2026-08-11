@@ -8,7 +8,7 @@ import {
 	debounce,
 	setTooltip,
 } from "obsidian";
-import { FIELD, catalogNotes } from "./note";
+import { FIELD, catalogNotes, readHash } from "./note";
 import { BOOK_EXTENSIONS, type BookFormat } from "./types";
 import { columnsFor, rowCount, visibleRows } from "./virtual";
 
@@ -198,7 +198,7 @@ export class LibraryView extends ItemView {
 
 		for (const note of catalogNotes(this.app)) {
 			const frontmatter = this.app.metadataCache.getFileCache(note)?.frontmatter;
-			if (!frontmatter || typeof frontmatter[FIELD.hash] !== "string") continue;
+			if (!frontmatter || !readHash(frontmatter)) continue;
 
 			const title = String(frontmatter[FIELD.title] ?? note.basename);
 			const author = String(frontmatter[FIELD.author] ?? "");

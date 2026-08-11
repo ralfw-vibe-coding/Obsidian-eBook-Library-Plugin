@@ -13,6 +13,7 @@ import {
 	frontmatterOf,
 	markOrphaned,
 	pathSizeKey,
+	readHash,
 	updateBookPath,
 	writeCover,
 	type CatalogIndex,
@@ -228,9 +229,7 @@ export async function reingestAll(app: App, options: ScanOptions = {}): Promise<
 		problems: [],
 	};
 
-	const notes = catalogNotes(app).filter(
-		(note) => typeof frontmatterOf(app, note)?.[FIELD.hash] === "string",
-	);
+	const notes = catalogNotes(app).filter((note) => readHash(frontmatterOf(app, note)) !== null);
 	result.scanned = notes.length;
 
 	for (const [position, note] of notes.entries()) {
@@ -260,9 +259,9 @@ export async function reingestAll(app: App, options: ScanOptions = {}): Promise<
 export async function reingestNote(app: App, note: TFile): Promise<string[]> {
 	const frontmatter = frontmatterOf(app, note);
 	const bookPath = frontmatter?.[FIELD.file];
-	const hash = frontmatter?.[FIELD.hash];
+	const hash = readHash(frontmatter);
 
-	if (typeof bookPath !== "string" || typeof hash !== "string") {
+	if (typeof bookPath !== "string" || !hash) {
 		throw new Error("Das ist keine Katalog-Notiz (hash oder file fehlt).");
 	}
 	if (!(await app.vault.adapter.exists(bookPath))) {

@@ -1,5 +1,5 @@
 import { Notice, Plugin, TFile } from "obsidian";
-import { FIELD, frontmatterOf } from "./note";
+import { frontmatterOf, readHash } from "./note";
 import { writeReport } from "./report";
 import { reingestAll, reingestNote, scanLibrary } from "./scan";
 import type { ScanResult } from "./types";
@@ -94,7 +94,7 @@ export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 	private activeCatalogNote(): TFile | null {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") return null;
-		if (typeof frontmatterOf(this.app, file)?.[FIELD.hash] !== "string") return null;
+		if (!readHash(frontmatterOf(this.app, file))) return null;
 
 		return file;
 	}

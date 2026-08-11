@@ -12,6 +12,7 @@ import { DOMParser } from "@xmldom/xmldom";
 (globalThis as Record<string, unknown>).DOMParser = DOMParser;
 
 const { scanLibrary } = await import("../src/scan");
+const { readHash } = await import("../src/note");
 const { App, parseFrontMatter } = await import("./obsidian-stub");
 
 const source = process.argv[2];
@@ -58,6 +59,16 @@ check("Titel im Frontmatter", sample.title === "Alexandria", String(sample.title
 check("Autor im Frontmatter", sample.author === "Paul Kingsnorth", String(sample.author));
 check("Größe ist eine Zahl", typeof sample.size === "number", typeof sample.size);
 check("Hash ist ein SHA-256", /^[0-9a-f]{64}$/.test(String(sample.hash)));
+
+// Ein Hash aus lauter Ziffern läse YAML als Zahl. Deshalb wird er quotiert
+// geschrieben — und beim Lesen trotzdem als Zahl akzeptiert, für Altbestände.
+const rawFrontmatter = readFileSync(
+	join(root, "_catalog", notes.find((name) => name.startsWith("Alexandria"))!),
+	"utf8",
+);
+check("Hash wird quotiert geschrieben", /^hash: "[0-9a-f]{64}"$/m.test(rawFrontmatter));
+check("readHash nimmt auch eine Zahl", readHash({ hash: 12345 }) === "12345");
+check("readHash lehnt Fehlendes ab", readHash({}) === null && readHash(undefined) === null);
 check("Tags aus dem Pfad", Array.isArray(sample.tags) && sample.tags.includes("abendlektüre"),
 	JSON.stringify(sample.tags));
 

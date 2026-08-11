@@ -37,6 +37,20 @@ export function pathSizeKey(path: string, size: number): string {
 }
 
 /**
+ * Den Hash aus dem Frontmatter lesen.
+ *
+ * Zahlen werden mit übernommen: ein Hash aus lauter Ziffern liest YAML als
+ * Zahl statt als Zeichenkette. Beim Schreiben wird er deshalb quotiert — aber
+ * ältere und von Hand erzeugte Notizen müssen weiter gelesen werden können.
+ */
+export function readHash(frontmatter: Record<string, unknown> | undefined): string | null {
+	const value = frontmatter?.[FIELD.hash];
+	if (typeof value === "string") return value.trim() || null;
+	if (typeof value === "number" && Number.isFinite(value)) return String(value);
+	return null;
+}
+
+/**
  * Der Aufbau kostet keine Dateizugriffe: Obsidian hält das Frontmatter aller
  * Markdown-Dateien ohnehin im metadataCache. Siehe KONZEPT.md, Abschnitt 6.
  */
@@ -49,10 +63,10 @@ export function buildIndex(app: App): CatalogIndex {
 
 	for (const note of catalogNotes(app)) {
 		const frontmatter = app.metadataCache.getFileCache(note)?.frontmatter;
-		const hash = frontmatter?.[FIELD.hash];
+		const hash = readHash(frontmatter);
 		const bookPath = frontmatter?.[FIELD.file];
 		const size = frontmatter?.[FIELD.size];
-		if (typeof hash !== "string" || !hash) continue;
+		if (!hash) continue;
 
 		index.byHash.set(hash, note);
 		if (typeof bookPath === "string" && bookPath) {
@@ -99,7 +113,8 @@ export async function createNote(app: App, note: NewNote): Promise<TFile> {
 function renderNote(note: NewNote): string {
 	const lines: string[] = ["---"];
 
-	lines.push(`${FIELD.hash}: ${note.hash}`);
+	// Quotiert, damit YAML einen Hash aus lauter Ziffern nicht als Zahl liest.
+	lines.push(`${FIELD.hash}: ${yamlString(note.hash)}`);
 	lines.push(`${FIELD.file}: ${yamlString(note.bookPath)}`);
 	lines.push(`${FIELD.format}: ${note.format}`);
 	lines.push(`${FIELD.size}: ${note.size}`);
