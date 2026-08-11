@@ -232,22 +232,31 @@ export class LibraryView extends ItemView {
 	private buildTagBar(): void {
 		this.tagsEl = this.contentEl.createDiv("ebook-tags");
 
-		const search = this.tagsEl.createEl("input", {
-			cls: "ebook-tag-search",
+		const box = this.tagsEl.createDiv("ebook-tag-search");
+		const search = box.createEl("input", {
 			attr: { type: "search", placeholder: "Tags filtern …" },
 		});
+
+		const clear = box.createEl("button", { cls: "ebook-tag-clear" });
+		setIcon(clear, "x");
+		setTooltip(clear, "Filter löschen");
+
+		const apply = (value: string) => {
+			this.tagQuery = value.trim().toLowerCase();
+			box.toggleClass("has-text", value.length > 0);
+			this.renderTagChips();
+		};
+
 		this.registerDomEvent(
 			search,
 			"input",
-			debounce(
-				() => {
-					this.tagQuery = search.value.trim().toLowerCase();
-					this.renderTagChips();
-				},
-				120,
-				true,
-			),
+			debounce(() => apply(search.value), 120, true),
 		);
+		this.registerDomEvent(clear, "click", () => {
+			search.value = "";
+			apply("");
+			search.focus();
+		});
 
 		this.chipsEl = this.tagsEl.createDiv("ebook-chips");
 	}
