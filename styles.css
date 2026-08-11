@@ -219,6 +219,13 @@
   color: var(--text-normal);
 }
 
+/* Notnagel, falls Obsidian einen Symbolnamen nicht kennt */
+.ebook-icon-fallback {
+  font-size: 11px;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+
 /* Ingest-Protokoll */
 
 .ebook-log-picker {

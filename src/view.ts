@@ -178,7 +178,7 @@ export class LibraryView extends ItemView {
 
 		const history = bar.createEl("button", { cls: "clickable-icon ebook-history" });
 		setTooltip(history, "Zugänge und Protokoll");
-		setIcon(history, "inbox");
+		safeIcon(history, "history", "Zugänge");
 		this.registerDomEvent(history, "click", (event) => this.showRunMenu(event));
 
 		const scan = bar.createEl("button", { cls: "clickable-icon ebook-scan" });
@@ -501,6 +501,21 @@ export class LibraryView extends ItemView {
 			void this.app.workspace.getLeaf("tab").openFile(entry.note);
 		});
 	}
+}
+
+/**
+ * Symbol setzen — und wenn Obsidian den Namen nicht kennt, wenigstens Text.
+ *
+ * `setIcon` mit einem unbekannten Namen zeichnet wortlos nichts; übrig bleibt
+ * ein leerer, unsichtbarer Knopf. Genau das ist mit `inbox` passiert, das es in
+ * Obsidians Lucide-Satz nicht gibt.
+ */
+function safeIcon(button: HTMLElement, icon: string, fallback: string): void {
+	setIcon(button, icon);
+	if (button.querySelector("svg")) return;
+
+	button.addClass("ebook-icon-fallback");
+	button.setText(fallback);
 }
 
 /**
