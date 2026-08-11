@@ -1,7 +1,7 @@
 {
   "id": "ebook-library",
   "name": "eBook Library",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.7.0",
   "description": "Katalogisiert EPUB- und PDF-Bücher der Vault als Markdown-Notizen mit Cover und Metadaten.",
   "author": "Ralf Westphal",
