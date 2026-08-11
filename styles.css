@@ -157,6 +157,8 @@
   overflow-y: auto;
 }
 
+/* Farben von Obsidians Tags: --background-modifier-form-field ist im hellen
+   Thema var(--background-primary), also weiss auf weiss — unsichtbar. */
 .ebook-chip {
   display: inline-flex;
   align-items: center;
@@ -164,16 +166,18 @@
   height: auto;
   font-size: 10px;
   line-height: 15px;
-  padding: 0 7px;
+  padding: 1px 8px;
+  border: none;
   border-radius: 8px;
-  color: var(--text-muted);
-  background: var(--background-modifier-form-field);
+  color: var(--tag-color, var(--text-accent));
+  background: var(--tag-background, var(--background-modifier-hover));
   box-shadow: none;
   cursor: pointer;
 }
 
 .ebook-chip:hover {
-  color: var(--text-normal);
+  color: var(--tag-color-hover, var(--text-accent));
+  background: var(--tag-background-hover, var(--background-modifier-active-hover));
 }
 
 .ebook-chip.is-on {
@@ -348,10 +352,10 @@
   max-width: 100%;
   font-size: var(--ebook-small-size);
   line-height: calc(var(--ebook-small-line) - 3px);
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 7px;
-  color: var(--text-faint);
-  background: var(--background-modifier-form-field);
+  color: var(--tag-color, var(--text-accent));
+  background: var(--tag-background, var(--background-modifier-hover));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
