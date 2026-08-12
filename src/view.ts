@@ -23,6 +23,7 @@ import {
 	type ReadingList,
 } from "./lists";
 import { LogModal } from "./log";
+import { canReveal, fileManagerName, reveal } from "./system";
 import { FIELD, catalogNotes, readHash } from "./note";
 import { BOOK_EXTENSIONS, type BookFormat } from "./types";
 import { columnsFor, rowCount, visibleRows } from "./virtual";
@@ -353,6 +354,21 @@ export class LibraryView extends ItemView {
 				.setIcon("list-plus")
 				.onClick(() => this.addToSomeList(entry)),
 		);
+
+		if (entry.bookPath && canReveal(this.app)) {
+			menu.addItem((item) =>
+				item
+					.setTitle(`Im ${fileManagerName()} zeigen`)
+					.setIcon("folder-open")
+					.onClick(() => {
+						try {
+							reveal(this.app, entry.bookPath);
+						} catch (error) {
+							new Notice(error instanceof Error ? error.message : String(error));
+						}
+					}),
+			);
+		}
 
 		const list = this.activeList;
 		if (list) {

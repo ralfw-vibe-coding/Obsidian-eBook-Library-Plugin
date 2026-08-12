@@ -13,6 +13,7 @@ import {
 	writeCover,
 } from "./note";
 import { extractPdf } from "./pdf";
+import { sourcePathOf } from "./system";
 import { normalizeTag, tagsFromPath } from "./tags";
 import { BOOK_EXTENSIONS, CATALOG_FOLDER, type BookFormat, type BookMeta } from "./types";
 
@@ -77,7 +78,7 @@ export async function prepare(app: App, files: File[]): Promise<Candidate[]> {
 
 		candidates.push({
 			sourceName: file.name,
-			sourcePath: pathOf(file),
+			sourcePath: sourcePathOf(file),
 			format,
 			bytes,
 			size: bytes.byteLength,
@@ -199,49 +200,4 @@ export async function importOne(
 	});
 
 	return path;
-}
-
-/**
- * Die Quelldatei in den Papierkorb des Systems. Nicht endgültig löschen — wenn
- * beim Import doch etwas schiefging, will man sie zurückholen können.
- */
-export async function trashSource(path: string): Promise<void> {
-	const electron = requireElectron();
-	if (!electron?.shell?.trashItem) throw new Error("Der Papierkorb ist von hier nicht erreichbar.");
-	await electron.shell.trashItem(path);
-}
-
-export function canTrashSources(): boolean {
-	return Boolean(requireElectron()?.shell?.trashItem);
-}
-
-/**
- * Electron gibt den echten Pfad einer gewählten Datei nur noch über webUtils
- * heraus; `File.path` ist in neueren Versionen fort. Ohne Pfad lässt sich die
- * Quelle hinterher nicht wegräumen — der Import selbst braucht ihn nicht.
- */
-function pathOf(file: File): string | null {
-	const electron = requireElectron();
-	try {
-		const viaUtils = electron?.webUtils?.getPathForFile?.(file);
-		if (viaUtils) return viaUtils;
-	} catch {
-		// Fällt unten auf die alte Eigenschaft zurück.
-	}
-
-	const legacy = (file as File & { path?: string }).path;
-	return legacy || null;
-}
-
-interface ElectronBits {
-	shell?: { trashItem?: (path: string) => Promise<void> };
-	webUtils?: { getPathForFile?: (file: File) => string };
-}
-
-function requireElectron(): ElectronBits | null {
-	try {
-		return (window as Window & { require?: (id: string) => ElectronBits }).require?.("electron") ?? null;
-	} catch {
-		return null;
-	}
 }

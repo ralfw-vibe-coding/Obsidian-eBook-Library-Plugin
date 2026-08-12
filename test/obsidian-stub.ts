@@ -36,6 +36,26 @@ export class Notice {
 
 export class Plugin {}
 
+/** Der Prüfstand läuft in Node, nicht in Electron. */
+export const Platform = {
+	isDesktop: true,
+	isDesktopApp: false,
+	isMacOS: process.platform === "darwin",
+	isWin: process.platform === "win32",
+	isLinux: process.platform === "linux",
+};
+
+/**
+ * Nur als Typ gebraucht: src/system.ts prüft mit `instanceof`, ob die Vault auf
+ * Platte liegt. Im Prüfstand tut sie das nicht — also erbt der Ersatz-Adapter
+ * bewusst nicht davon, und die Prüfung schlägt korrekt fehl.
+ */
+export class FileSystemAdapter {
+	getFullPath(path: string): string {
+		return path;
+	}
+}
+
 class FakeAdapter {
 	constructor(private root: string) {}
 

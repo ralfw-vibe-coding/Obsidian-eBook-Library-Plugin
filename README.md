@@ -56,6 +56,16 @@ sollen. In den Papierkorb, nicht gelöscht.
 Jeder Import ist ein Eintrag in den Zugängen wie ein Scan — du siehst also
 gleich, was gerade dazugekommen ist.
 
+## Kontextmenü eines Buchs
+
+Rechtsklick auf ein Buch im Katalog:
+
+- **Zu Leseliste hinzufügen …**
+- **Im Finder zeigen** (auf Windows: im Explorer) — springt zur Buchdatei im
+  Dateimanager des Systems
+- im Listenmodus zusätzlich **An den Anfang**, **Ans Ende** und **Aus der Liste
+  entfernen**
+
 ## Zugänge und Protokoll
 
 Jeder Ingest-Lauf bekommt einen Zeitstempel, der als `ingested` in den Notizen
