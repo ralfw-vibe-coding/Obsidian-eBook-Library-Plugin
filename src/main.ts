@@ -1,6 +1,9 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import { frontmatterOf, readHash } from "./note";
-import { appendRun, recordOf, type RunRecord } from "./history";
+import { appendRun, recordOf, runId, type RunRecord } from "./history";
+import { ConfirmModal } from "./confirm";
+import { ImportModal } from "./import-modal";
+import { canTrashSources, importOne, prepare, trashSource, type Candidate, type ImportChoice } from "./import";
 import { reingestAll, reingestNote, scanLibrary } from "./scan";
 import type { ScanResult } from "./types";
 import { LibraryView, VIEW_TYPE_LIBRARY, type LibraryHost } from "./view";
@@ -84,6 +87,112 @@ export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 
 	async runScan(): Promise<void> {
 		await this.scan({ mode: "scan" });
+	}
+
+	/**
+	 * Bücher von außerhalb hereinholen. Gelesen wird zuerst nur in den Speicher;
+	 * der Dialog zeigt, was ankäme, und erst danach wird geschrieben.
+	 */
+	async runImport(): Promise<void> {
+		const files = await pickFiles();
+		if (files.length === 0) return;
+
+		const notice = new Notice("Dateien werden gelesen …", 0);
+		let candidates: Candidate[];
+		try {
+			candidates = await prepare(this.app, files);
+		} finally {
+			notice.hide();
+		}
+
+		if (candidates.length === 0) {
+			new Notice("Keine EPUB- oder PDF-Datei dabei.");
+			return;
+		}
+
+		new ImportModal(this.app, candidates, (picks) => void this.performImport(picks)).open();
+	}
+
+	private async performImport(
+		picks: { candidate: Candidate; choice: ImportChoice }[],
+	): Promise<void> {
+		const started = Date.now();
+		const id = runId(new Date());
+		const result: ScanResult = {
+			runId: id,
+			scanned: picks.length,
+			skipped: 0,
+			ingested: [],
+			moved: [],
+			orphaned: [],
+			revived: [],
+			problems: [],
+		};
+
+		const notice = new Notice("Wird importiert …", 0);
+		const imported: Candidate[] = [];
+
+		try {
+			for (const [position, pick] of picks.entries()) {
+				notice.setMessage(`Wird importiert … ${position + 1}/${picks.length}\n${pick.candidate.sourceName}`);
+				try {
+					result.ingested.push(await importOne(this.app, pick.candidate, pick.choice, id));
+					imported.push(pick.candidate);
+					for (const warning of pick.candidate.warnings) {
+						result.problems.push({ path: pick.candidate.sourceName, message: warning });
+					}
+				} catch (error) {
+					result.problems.push({ path: pick.candidate.sourceName, message: describe(error) });
+				}
+			}
+		} finally {
+			notice.hide();
+		}
+
+		this.config.runs = appendRun(
+			this.config.runs,
+			recordOf(result, "import", (Date.now() - started) / 1000),
+		);
+		await this.saveData(this.config);
+
+		new Notice(
+			`${result.ingested.length} von ${picks.length} importiert` +
+				(result.problems.length > 0 ? `, ${result.problems.length} Auffälligkeiten.` : "."),
+			8000,
+		);
+
+		this.offerToTrash(imported, result.problems.length === 0);
+	}
+
+	/**
+	 * Erst wenn alles geklappt hat, nach den Quelldateien fragen — und sie in
+	 * den Papierkorb legen statt zu löschen.
+	 */
+	private offerToTrash(imported: Candidate[], clean: boolean): void {
+		if (!clean || !canTrashSources()) return;
+
+		const removable = imported.filter((candidate) => candidate.sourcePath);
+		if (removable.length === 0) return;
+
+		new ConfirmModal(
+			this.app,
+			"Quelldateien wegräumen?",
+			`${removable.length} ${removable.length === 1 ? "Datei wurde" : "Dateien wurden"} in die Bibliothek kopiert. ` +
+				`${removable.length === 1 ? "Soll das Original" : "Sollen die Originale"} in den Papierkorb?`,
+			"In den Papierkorb",
+			() => {
+				void Promise.allSettled(
+					removable.map((candidate) => trashSource(candidate.sourcePath as string)),
+				).then((results) => {
+					const failed = results.filter((entry) => entry.status === "rejected").length;
+					new Notice(
+						failed === 0
+							? `${removable.length} Quelldatei${removable.length === 1 ? "" : "en"} in den Papierkorb gelegt.`
+							: `${removable.length - failed} weggeräumt, ${failed} nicht erreichbar.`,
+					);
+				});
+			},
+		).open();
 	}
 
 	private async openLibrary(): Promise<void> {
@@ -178,6 +287,19 @@ function summarize(result: ScanResult, mode: ScanMode): string {
 	if (result.problems.length > 0) parts.push(`${result.problems.length} Auffälligkeiten`);
 
 	return `Scan fertig: ${parts.join(", ")}.`;
+}
+
+/** Dateiauswahl über ein verstecktes Eingabefeld — kein Electron-Dialog nötig. */
+function pickFiles(): Promise<File[]> {
+	return new Promise((resolve) => {
+		const input = document.createElement("input");
+		input.type = "file";
+		input.multiple = true;
+		input.accept = ".epub,.pdf";
+		input.addEventListener("change", () => resolve(Array.from(input.files ?? [])));
+		input.addEventListener("cancel", () => resolve([]));
+		input.click();
+	});
 }
 
 function describe(error: unknown): string {

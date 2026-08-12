@@ -1,13 +1,13 @@
 {
   "name": "obsidian-ebook-library",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Obsidian-Plugin zur Verwaltung einer eBook-Sammlung",
   "main": "main.js",
   "type": "module",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "test": "node test/build.mjs && node test/.virtual.test.mjs && node test/.history.test.mjs && node test/.lists.test.mjs && node test/.scan.test.mjs \"../Ebook Test Vault\"",
+    "test": "node test/build.mjs && node test/.virtual.test.mjs && node test/.history.test.mjs && node test/.lists.test.mjs && node test/.import.test.mjs && node test/.scan.test.mjs \"../Ebook Test Vault\"",
     "harness": "node test/build.mjs && node test/.harness.mjs",
     "harness:browser": "node test/build.mjs && echo 'Server auf http://127.0.0.1:8765 — test/browser/index.html im Browser öffnen' && cd .. && python3 -m http.server 8765 --bind 127.0.0.1"
   },

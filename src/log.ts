@@ -63,7 +63,9 @@ export class LogModal extends Modal {
 		const line = parent.createDiv("ebook-log-summary");
 
 		const parts =
-			run.mode === "reingest"
+			run.mode === "import"
+				? [`${run.ingested} von ${run.scanned} ${run.scanned === 1 ? "Buch" : "Büchern"} importiert`]
+				: run.mode === "reingest"
 				? [`${run.ingested} von ${run.scanned} Büchern neu eingelesen`]
 				: [
 						`${run.scanned} Dateien geprüft`,
@@ -115,6 +117,7 @@ export class LogModal extends Modal {
 }
 
 function describeMode(run: RunRecord): string {
+	if (run.mode === "import") return `${run.ingested} importiert`;
 	if (run.mode === "reingest") return `${run.ingested} neu eingelesen`;
 	if (run.ingested === 0) return "nichts Neues";
 	return run.ingested === 1 ? "1 neues Buch" : `${run.ingested} neue Bücher`;

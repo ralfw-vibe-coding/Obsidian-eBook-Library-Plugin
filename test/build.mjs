@@ -26,7 +26,7 @@ await esbuild.build({
 });
 
 await esbuild.build({
-	entryPoints: ["test/scan.test.ts", "test/lists.test.ts"],
+	entryPoints: ["test/scan.test.ts", "test/lists.test.ts", "test/import.test.ts"],
 	bundle: true,
 	platform: "node",
 	format: "esm",

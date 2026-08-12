@@ -32,6 +32,7 @@ export const VIEW_TYPE_LIBRARY = "ebook-library-view";
 /** Was der View vom Plugin braucht — hält die beiden Module voneinander frei. */
 export interface LibraryHost {
 	runScan(): Promise<void>;
+	runImport(): Promise<void>;
 	zoom: number;
 	saveZoom(zoom: number): void;
 	/** Protokoll der letzten Ingest-Läufe, neuester zuerst. */
@@ -199,6 +200,13 @@ export class LibraryView extends ItemView {
 			this.host.saveZoom(value);
 			this.renderedRange = [-1, -1];
 			this.paint();
+		});
+
+		const importButton = bar.createEl("button", { cls: "clickable-icon ebook-import" });
+		setTooltip(importButton, "Bücher importieren");
+		safeIcon(importButton, "import", "Import");
+		this.registerDomEvent(importButton, "click", () => {
+			void this.host.runImport().finally(() => this.reload());
 		});
 
 		const lists = bar.createEl("button", { cls: "clickable-icon ebook-lists" });

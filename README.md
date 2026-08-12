@@ -35,6 +35,27 @@ Verschwundene Bücher werden markiert, nie gelöscht.
 | **Metadaten und Cover aller Bücher neu einlesen** | Nach einer Verbesserung der Extraktion im Plugin. Ein Scan hilft dafür nicht — die Bücher haben sich ja nicht geändert, nur das Auslesen. Tags und Notiztext bleiben unangetastet. |
 | **Metadaten und Cover dieses Buchs neu einlesen** | Dasselbe für die gerade geöffnete Katalog-Notiz. |
 
+## Import
+
+Das Import-Symbol in der Leiste öffnet die Dateiauswahl. Die gewählten EPUBs und
+PDFs werden zunächst nur **in den Speicher** gelesen — Hash, Metadaten, Cover.
+Nichts landet in der Vault, bevor du bestätigst.
+
+Der Dialog zeigt je Buch Cover, Titel, Autor, Zielordner und Tags, alles
+änderbar. Der Zielordner ist vorbelegt: steht schon ein Buch desselben Autors im
+Katalog, kommt das neue in dessen Ordner; sonst gilt der zuletzt gewählte. Die
+Tags folgen aus dem Ordner, solange du sie nicht selbst anfasst.
+
+Beim Import wird die Datei nach deiner Konvention umbenannt — `Titel - Autor.epub` —
+und in den Zielordner kopiert; die Notiz entsteht direkt, ein Scan ist nicht nötig.
+Bücher, die am Hash schon im Katalog erkannt werden, sind gesperrt.
+
+Hat alles geklappt, fragt das Plugin, ob die Quelldateien in den Papierkorb
+sollen. In den Papierkorb, nicht gelöscht.
+
+Jeder Import ist ein Eintrag in den Zugängen wie ein Scan — du siehst also
+gleich, was gerade dazugekommen ist.
+
 ## Zugänge und Protokoll
 
 Jeder Ingest-Lauf bekommt einen Zeitstempel, der als `ingested` in den Notizen

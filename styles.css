@@ -621,3 +621,112 @@
 .ebook-cell.is-drop-after::after {
   right: -10px;
 }
+
+/* Import */
+
+.ebook-import {
+  flex: none;
+  padding: 3px;
+  color: var(--text-muted);
+}
+
+.ebook-import:hover {
+  color: var(--text-normal);
+}
+
+.ebook-import-modal {
+  max-width: 720px;
+  width: 90vw;
+}
+
+.ebook-import-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ebook-import-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.ebook-import-item.is-duplicate {
+  opacity: 0.55;
+}
+
+.ebook-import-cover {
+  flex: none;
+  width: 62px;
+  aspect-ratio: 2 / 3;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--background-modifier-border);
+}
+
+.ebook-import-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ebook-import-nocover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.ebook-import-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ebook-import-fields input {
+  width: 100%;
+  height: 26px;
+  font-size: 13px;
+}
+
+.ebook-import-fields input.ebook-import-author,
+.ebook-import-fields input.ebook-import-tags {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ebook-import-folder-button {
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  padding: 4px 9px;
+}
+
+.ebook-import-folder-button.is-empty {
+  color: var(--text-faint);
+}
+
+.ebook-import-target {
+  font-size: 11px;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.ebook-import-warn {
+  font-size: 12px;
+  color: var(--text-warning, var(--text-muted));
+}
+
+.ebook-import-note {
+  font-size: 11px;
+  color: var(--text-faint);
+}

@@ -9,7 +9,7 @@ import type { ScanResult } from "./types";
 export interface RunRecord {
 	/** Zeitstempel des Laufs, zugleich der Wert im `ingested`-Feld der Notizen. */
 	id: string;
-	mode: "scan" | "rehash" | "reingest";
+	mode: "scan" | "rehash" | "reingest" | "import";
 	scanned: number;
 	skipped: number;
 	ingested: number;
