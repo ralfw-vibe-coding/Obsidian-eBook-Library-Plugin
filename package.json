@@ -1,6 +1,6 @@
 {
   "name": "obsidian-ebook-library",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Obsidian-Plugin zur Verwaltung einer eBook-Sammlung",
   "main": "main.js",
   "type": "module",

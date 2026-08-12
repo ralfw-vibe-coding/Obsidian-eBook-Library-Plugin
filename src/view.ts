@@ -204,7 +204,7 @@ export class LibraryView extends ItemView {
 
 		const importButton = bar.createEl("button", { cls: "clickable-icon ebook-import" });
 		setTooltip(importButton, "Bücher importieren");
-		safeIcon(importButton, "import", "Import");
+		safeIcon(importButton, "file-up", "Import");
 		this.registerDomEvent(importButton, "click", () => {
 			void this.host.runImport().finally(() => this.reload());
 		});
@@ -439,7 +439,7 @@ export class LibraryView extends ItemView {
 				menu.addItem((item) =>
 					item
 						.setTitle(
-							`${formatRunTime(run.id)} · ${run.ingested} ${run.ingested === 1 ? "Buch" : "Bücher"}`,
+							`${formatRunTime(run.id)} (${run.ingested})`,
 						)
 						.setChecked(this.runFilter?.id === run.id)
 						.onClick(() => {
@@ -671,14 +671,14 @@ export class LibraryView extends ItemView {
 		this.countEl.toggleClass("is-filtered", this.runFilter !== null || this.activeList !== null);
 
 		if (this.activeList) {
-			this.countEl.setText(`${this.activeList.name} · ${this.shown.length}`);
+			this.countEl.setText(`${this.activeList.name} (${this.shown.length})`);
 			setTooltip(this.countEl, "Leseliste verlassen");
 			return;
 		}
 
 		if (this.runFilter) {
 			this.countEl.setText(
-				`Zugang ${formatRunTime(this.runFilter.id)} · ${this.shown.length}`,
+				`Zugang ${formatRunTime(this.runFilter.id)} (${this.shown.length})`,
 			);
 			setTooltip(this.countEl, "Zugangsfilter aufheben");
 			return;
