@@ -7,7 +7,7 @@ import { importOne, prepare, type Candidate, type ImportChoice } from "./import"
 import { canTrashSources, trashSource } from "./system";
 import { reingestAll, reingestNote, scanLibrary } from "./scan";
 import type { ScanResult } from "./types";
-import { LibraryView, VIEW_TYPE_LIBRARY, type LibraryHost } from "./view";
+import { LibraryView, VIEW_TYPE_LIBRARY, type LibraryHost, type SortMode } from "./view";
 
 type ScanMode = "scan" | "rehash" | "reingest";
 
@@ -16,9 +16,12 @@ interface Settings {
 	zoom: number;
 	/** Protokoll der letzten Ingest-Läufe, neuester zuerst. */
 	runs: RunRecord[];
+	/** Die zuletzt gewählte Sicht auf den Katalog. */
+	sort: SortMode;
 }
 
-const DEFAULTS: Settings = { zoom: 100, runs: [] };
+// Nach Zugang ist die sinnvollere Vorgabe: was zuletzt dazukam, will man sehen.
+const DEFAULTS: Settings = { zoom: 100, runs: [], sort: "recent" };
 
 export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 	private scanning = false;
@@ -79,6 +82,15 @@ export default class EbookLibraryPlugin extends Plugin implements LibraryHost {
 				void this.reingest(note);
 			},
 		});
+	}
+
+	get sort(): SortMode {
+		return this.config.sort;
+	}
+
+	saveSort(sort: SortMode): void {
+		this.config.sort = sort;
+		void this.saveData(this.config);
 	}
 
 	saveZoom(zoom: number): void {

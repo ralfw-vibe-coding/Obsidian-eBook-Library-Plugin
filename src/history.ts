@@ -75,6 +75,21 @@ export function belongsToRun(ingested: unknown, run: RunRecord): boolean {
 	return value !== "" && value === run.id;
 }
 
+/**
+ * Neueste zuerst. Die Zeitstempel sind so gebaut, dass sie sich als
+ * Zeichenketten vergleichen lassen.
+ *
+ * Altbestand trägt nur ein Datum. `2026-08-11` sortiert dadurch vor jedem
+ * Zeitstempel desselben Tages, landet also weiter unten — richtig so, denn er
+ * stammt aus der Zeit davor. Notizen ganz ohne Angabe stehen zuletzt.
+ */
+export function byIngestDesc(a: string, b: string): number {
+	if (!a && !b) return 0;
+	if (!a) return 1;
+	if (!b) return -1;
+	return b.localeCompare(a);
+}
+
 /** `11.08.2026, 15:42` */
 export function formatRunTime(id: string): string {
 	const [date, time] = id.split("T");

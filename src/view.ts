@@ -10,7 +10,7 @@ import {
 	setTooltip,
 } from "obsidian";
 import { ConfirmModal } from "./confirm";
-import { belongsToRun, formatRunTime, type RunRecord } from "./history";
+import { belongsToRun, byIngestDesc, formatRunTime, type RunRecord } from "./history";
 import { ListPicker } from "./list-picker";
 import {
 	addToList,
@@ -30,12 +30,20 @@ import { columnsFor, rowCount, visibleRows } from "./virtual";
 
 export const VIEW_TYPE_LIBRARY = "ebook-library-view";
 
+/**
+ * Die Sicht auf den Katalog. Filter und Suche wirken immer innerhalb der
+ * gewählten Sicht, nicht statt ihrer.
+ */
+export type SortMode = "recent" | "title";
+
 /** Was der View vom Plugin braucht — hält die beiden Module voneinander frei. */
 export interface LibraryHost {
 	runScan(): Promise<void>;
 	runImport(): Promise<void>;
 	zoom: number;
 	saveZoom(zoom: number): void;
+	sort: SortMode;
+	saveSort(sort: SortMode): void;
 	/** Protokoll der letzten Ingest-Läufe, neuester zuerst. */
 	runs: RunRecord[];
 }
@@ -66,6 +74,7 @@ export class LibraryView extends ItemView {
 	private shown: Entry[] = [];
 
 	private query = "";
+	private sort: SortMode = "recent";
 	private formats = new Set<BookFormat>(BOOK_EXTENSIONS);
 	private selectedTags = new Set<string>();
 	/** Zeigt nur die Bücher eines bestimmten Ingest-Laufs. */
@@ -179,6 +188,29 @@ export class LibraryView extends ItemView {
 				this.applyFilters();
 			});
 		}
+
+		this.sort = this.host.sort;
+		const sortChip = bar.createEl("button", { cls: "ebook-chip ebook-sort" });
+		const sortIcon = sortChip.createSpan("ebook-sort-icon");
+		const sortLabel = sortChip.createSpan();
+		const showSort = () => {
+			const recent = this.sort === "recent";
+			safeIcon(sortIcon, recent ? "clock" : "arrow-down-wide-narrow", "");
+			sortLabel.setText(recent ? "Zugang" : "A–Z");
+			setTooltip(
+				sortChip,
+				recent
+					? "Nach Zugang, neueste zuerst — klicken für alphabetisch"
+					: "Alphabetisch nach Titel — klicken für Zugang",
+			);
+		};
+		showSort();
+		this.registerDomEvent(sortChip, "click", () => {
+			this.sort = this.sort === "recent" ? "title" : "recent";
+			this.host.saveSort(this.sort);
+			showSort();
+			this.applyFilters();
+		});
 
 		const zoomWrap = bar.createDiv("ebook-zoom");
 		setTooltip(zoomWrap, "Größe der Cover");
@@ -580,7 +612,7 @@ export class LibraryView extends ItemView {
 			});
 		}
 
-		entries.sort((a, b) => a.title.localeCompare(b.title, "de"));
+		// Sortiert wird in applyFilters, je nach gewählter Sicht.
 		return entries;
 	}
 
@@ -671,6 +703,13 @@ export class LibraryView extends ItemView {
 			this.shown.sort(
 				(a, b) => (positions.get(a.note.path) ?? 0) - (positions.get(b.note.path) ?? 0),
 			);
+		} else if (this.sort === "recent") {
+			this.shown.sort(
+				(a, b) =>
+					byIngestDesc(a.ingested, b.ingested) || a.title.localeCompare(b.title, "de"),
+			);
+		} else {
+			this.shown.sort((a, b) => a.title.localeCompare(b.title, "de"));
 		}
 
 		this.renderCount();

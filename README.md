@@ -13,6 +13,17 @@ Der Katalog wird über einen eigenen View bedient — Regalbrett mit Covern, Suc
 Format- und Tag-Filtern, Zoom. Die Markdown-Notizen sind reine Datenhaltung; man
 muss sie nicht öffnen.
 
+## Sichten
+
+Der Katalog hat zwei Sichten, umschaltbar über das Chip in der Leiste:
+
+- **Zugang** — umgekehrt chronologisch, das zuletzt Hinzugekommene oben. Die
+  Vorgabe, denn das ist meist das Interessante.
+- **A–Z** — alphabetisch nach Titel.
+
+Suche, Format- und Tag-Filter wirken **innerhalb** der gewählten Sicht, nicht
+statt ihrer. Im Listenmodus gilt stattdessen die Reihenfolge der Leseliste.
+
 Die Tag-Leiste hat eine eigene Sucheingabe: bei hunderten Tags sind höchstens
 vierzig Chips zu sehen, der Rest ist über die Suche erreichbar. Gewählte Tags
 stehen immer vorn und bleiben sichtbar.

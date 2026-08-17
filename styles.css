@@ -730,3 +730,18 @@
   font-size: 11px;
   color: var(--text-faint);
 }
+
+/* Sicht-Umschalter: Zugang oder alphabetisch */
+
+.ebook-sort {
+  flex: none;
+}
+
+.ebook-sort-icon {
+  display: flex;
+}
+
+.ebook-sort-icon svg {
+  width: 11px;
+  height: 11px;
+}

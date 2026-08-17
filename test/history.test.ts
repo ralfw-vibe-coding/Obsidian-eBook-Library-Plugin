@@ -2,7 +2,7 @@
  * Prüft die Lauf-Historie: Zeitstempel, Zuordnung von Notizen zu Läufen und
  * das Kappen der Aufbewahrung.
  */
-import { appendRun, belongsToRun, formatRunTime, recordOf, runId } from "../src/history";
+import { appendRun, belongsToRun, byIngestDesc, formatRunTime, recordOf, runId } from "../src/history";
 import type { RunRecord } from "../src/history";
 import type { ScanResult } from "../src/types";
 
@@ -64,6 +64,24 @@ for (let n = 0; n < 40; n++) runs = appendRun(runs, { ...run, id: `run-${n}` });
 check("neuester Lauf steht vorn", runs[0].id === "run-39", runs[0].id);
 check("Historie wird begrenzt", runs.length === 30, String(runs.length));
 check("ältester ist herausgefallen", !runs.some((r) => r.id === "run-9"));
+
+// --- Sicht „nach Zugang" ----------------------------------------------------
+
+const mixed = [
+	"2026-08-11T17:00:48",
+	"",
+	"2026-08-11",
+	"2026-08-12T09:15:00",
+	"2026-08-11T09:00:00",
+].sort(byIngestDesc);
+
+check(
+	"neueste zuerst",
+	mixed.join("|") === "2026-08-12T09:15:00|2026-08-11T17:00:48|2026-08-11T09:00:00|2026-08-11|",
+	mixed.join("|"),
+);
+check("reines Datum landet hinter den Zeitstempeln desselben Tages", mixed[3] === "2026-08-11");
+check("ohne Angabe ganz nach hinten", mixed[4] === "");
 
 console.log(failures === 0 ? "\nAlle Prüfungen bestanden." : `\n${failures} Prüfung(en) fehlgeschlagen.`);
 process.exit(failures === 0 ? 0 : 1);
